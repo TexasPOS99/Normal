@@ -282,13 +282,24 @@
             </div>
             <textarea id="inputArea" class="textarea-premium mb-4" placeholder="กรอก หรือ วางข้อความที่นี่ (เช่น 82/7 หมู่ 4)..."></textarea>
             
-            <div class="space-y-3">
-                <label class="block text-hint font-heading">📍 เลือกที่อยู่ที่บันทึกไว้</label>
-                <select id="savedAddressSelect" class="input-premium">
-                    <option value="">-- เลือกที่อยู่ --</option>
-                    <optgroup label="🏠 ส่วนตัว" id="group-personal"></optgroup>
-                    <optgroup label="👥 ของลูกค้า" id="group-customer"></optgroup>
-                </select>
+            <div class="space-y-3 relative">
+                <label class="block text-hint font-heading">📍 ค้นหาที่อยู่ที่บันทึกไว้</label>
+                <div class="relative">
+                    <input type="text" id="addressSearchInput" class="input-premium pr-10" placeholder="พิมพ์ชื่อ หรือ ที่อยู่เพื่อค้นหา...">
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 text-hint pointer-events-none">🔍</div>
+                </div>
+                <!-- Smart Search Results Dropdown -->
+                <div id="addressSearchResults" class="absolute z-[60] left-0 right-0 mt-1 bg-white rounded-xl border border-border shadow-xl hidden max-h-[300px] overflow-y-auto">
+                    <div id="search-group-personal" class="p-2">
+                        <div class="text-[10px] font-heading text-hint px-2 py-1 bg-bg-input rounded-lg mb-1">🏠 ส่วนตัว</div>
+                        <div id="search-items-personal" class="space-y-1"></div>
+                    </div>
+                    <div id="search-group-customer" class="p-2 border-t border-border">
+                        <div class="text-[10px] font-heading text-hint px-2 py-1 bg-bg-input rounded-lg mb-1">👥 ของลูกค้า</div>
+                        <div id="search-items-customer" class="space-y-1"></div>
+                    </div>
+                    <div id="search-no-results" class="p-4 text-center text-sm text-hint hidden">ไม่พบข้อมูลที่ค้นหา</div>
+                </div>
             </div>
         </div>
 
@@ -593,10 +604,11 @@
     // =============================================
     // --- ADDRESS SYSTEM (SUPABASE) ---
     // =============================================
+    let allAddresses = []; // เก็บข้อมูลที่อยู่ทั้งหมดเพื่อใช้ค้นหา
+
     function initAddressSystem() {
-      const select = document.getElementById('savedAddressSelect');
-      const groupPersonal = document.getElementById('group-personal');
-      const groupCustomer = document.getElementById('group-customer');
+      const searchInput = document.getElementById('addressSearchInput');
+      const searchResults = document.getElementById('addressSearchResults');
       const inputArea = document.getElementById('inputArea');
       const addressListContainer = document.getElementById('addressListContainer');
       
@@ -670,13 +682,68 @@
         addressIdToDelete = null;
       };
 
-      // Select address → fill input
-      select.addEventListener('change', (e) => {
-        if (e.target.value) {
-          inputArea.value = e.target.value;
-          showToast('โหลดที่อยู่แล้ว');
+      // Smart Search Logic
+      searchInput.addEventListener('focus', () => {
+        if (allAddresses.length > 0) {
+          renderSearchResults(searchInput.value);
+          searchResults.classList.remove('hidden');
         }
       });
+
+      searchInput.addEventListener('input', () => {
+        renderSearchResults(searchInput.value);
+        searchResults.classList.remove('hidden');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+          searchResults.classList.add('hidden');
+        }
+      });
+
+      function renderSearchResults(query) {
+        const personalItems = document.getElementById('search-items-personal');
+        const customerItems = document.getElementById('search-items-customer');
+        const noResults = document.getElementById('search-no-results');
+        const q = query.toLowerCase().trim();
+
+        personalItems.innerHTML = '';
+        customerItems.innerHTML = '';
+
+        const filtered = allAddresses.filter(item => 
+          item.name.toLowerCase().includes(q) || 
+          item.address.toLowerCase().includes(q)
+        );
+
+        let pCount = 0, cCount = 0;
+
+        filtered.forEach(item => {
+          const div = document.createElement('div');
+          div.className = "p-3 hover:bg-bg-input rounded-lg cursor-pointer transition-colors border border-transparent hover:border-border";
+          div.innerHTML = `
+            <div class="font-heading text-sm">${escapeHTML(item.name)}</div>
+            <div class="text-[10px] text-hint truncate">${escapeHTML(item.address)}</div>
+          `;
+          div.onclick = () => {
+            inputArea.value = item.address;
+            searchInput.value = item.name;
+            searchResults.classList.add('hidden');
+            showToast('โหลดที่อยู่แล้ว ✨');
+          };
+
+          if (item.type === 'customer') {
+            customerItems.appendChild(div);
+            cCount++;
+          } else {
+            personalItems.appendChild(div);
+            pCount++;
+          }
+        });
+
+        document.getElementById('search-group-personal').classList.toggle('hidden', pCount === 0);
+        document.getElementById('search-group-customer').classList.toggle('hidden', cCount === 0);
+        noResults.classList.toggle('hidden', filtered.length > 0);
+      }
 
       // Paste button
       document.getElementById('btnPaste').onclick = async () => {
@@ -727,27 +794,11 @@
     }
 
     function renderAddressList(addresses) {
-      const select = document.getElementById('savedAddressSelect');
-      const groupPersonal = document.getElementById('group-personal');
-      const groupCustomer = document.getElementById('group-customer');
+      allAddresses = addresses; // อัปเดตข้อมูลทั้งหมดเพื่อใช้ค้นหา
       const addressListContainer = document.getElementById('addressListContainer');
-
-      // เก็บค่าที่เลือกไว้ก่อนหน้า (ถ้ามี)
-      const currentSelected = select.value;
-
-      groupPersonal.innerHTML = '';
-      groupCustomer.innerHTML = '';
       addressListContainer.innerHTML = '';
 
       addresses.forEach((item) => {
-        const opt = document.createElement('option');
-        opt.value = item.address;
-        opt.textContent = item.name;
-        if (item.type === 'customer') {
-          groupCustomer.appendChild(opt);
-        } else {
-          groupPersonal.appendChild(opt);
-        }
         
         const div = document.createElement('div');
         div.className = "flex items-center justify-between p-3 bg-bg-input rounded-xl border border-border";
@@ -781,9 +832,6 @@
         emptyDiv.textContent = "ยังไม่มีที่อยู่ที่บันทึกไว้";
         addressListContainer.appendChild(emptyDiv);
       }
-
-      // คืนค่าที่เลือกไว้
-      if (currentSelected) select.value = currentSelected;
     }
 
     // =============================================
@@ -930,7 +978,9 @@
       boardDisplayCount = 10;
       renderMessages(messages);
       renderEmails(emails);
-      renderAddressList(addresses);
+      // เรียงที่อยู่แบบต่อท้าย (Oldest First) ตามความต้องการของผู้ใช้
+      const sortedAddresses = [...addresses].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      renderAddressList(sortedAddresses);
     }
 
     function isLikelyUrl(str) {
