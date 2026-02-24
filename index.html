@@ -735,8 +735,8 @@
       // เก็บค่าที่เลือกไว้ก่อนหน้า (ถ้ามี)
       const currentSelected = select.value;
 
-      groupPersonal.innerHTML = '<option value="">-- เลือกที่อยู่ส่วนตัว --</option>';
-      groupCustomer.innerHTML = '<option value="">-- เลือกที่อยู่ลูกค้า --</option>';
+      groupPersonal.innerHTML = '';
+      groupCustomer.innerHTML = '';
       addressListContainer.innerHTML = '';
 
       addresses.forEach((item) => {
