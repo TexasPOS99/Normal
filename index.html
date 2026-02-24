@@ -342,36 +342,42 @@
             <h3 class="font-heading text-lg mb-6 flex items-center gap-2">⚡ ตั้งค่าความหนาแน่น</h3>
             
             <div class="space-y-6">
+                <!-- สระ/วรรณยุกต์หลอก -->
                 <div class="flex items-center justify-between">
                     <label class="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" id="checkFake" checked class="w-5 h-5 accent-accent">
                         <span class="font-heading">สระ/วรรณยุกต์หลอก</span>
                     </label>
-                    <div class="flex items-center gap-3 bg-bg-input px-3 py-2 rounded-xl border border-border">
-                        <span class="text-xs text-muted font-heading">จำนวน:</span>
-                        <input type="number" id="numFake" value="3" min="1" max="10" class="w-10 bg-transparent border-none text-center font-bold outline-none">
+                    <div class="flex items-center gap-1 bg-bg-input p-1 rounded-xl border border-border">
+                        <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numFake', -1)">-</button>
+                        <input type="number" id="numFake" value="3" min="1" max="20" class="w-10 bg-transparent border-none text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                        <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numFake', 1)">+</button>
                     </div>
                 </div>
 
+                <!-- อักขระล่องหน -->
                 <div class="flex items-center justify-between">
                     <label class="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" id="checkInvisible" checked class="w-5 h-5 accent-accent">
                         <span class="font-heading">อักขระล่องหน</span>
                     </label>
-                    <div class="flex items-center gap-3 bg-bg-input px-3 py-2 rounded-xl border border-border">
-                        <span class="text-xs text-muted font-heading">จำนวน:</span>
-                        <input type="number" id="numInvisible" value="5" min="1" max="20" class="w-10 bg-transparent border-none text-center font-bold outline-none">
+                    <div class="flex items-center gap-1 bg-bg-input p-1 rounded-xl border border-border">
+                        <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numInvisible', -1)">-</button>
+                        <input type="number" id="numInvisible" value="5" min="1" max="50" class="w-10 bg-transparent border-none text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                        <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numInvisible', 1)">+</button>
                     </div>
                 </div>
 
+                <!-- สุ่มเว้นวรรค -->
                 <div class="flex items-center justify-between">
                     <label class="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" id="checkSpace" checked class="w-5 h-5 accent-accent">
                         <span class="font-heading">สุ่มเว้นวรรค</span>
                     </label>
-                    <div class="flex items-center gap-3 bg-bg-input px-3 py-2 rounded-xl border border-border">
-                        <span class="text-xs text-muted font-heading">จำนวน:</span>
-                        <input type="number" id="numSpace" value="2" min="1" max="10" class="w-10 bg-transparent border-none text-center font-bold outline-none">
+                    <div class="flex items-center gap-1 bg-bg-input p-1 rounded-xl border border-border">
+                        <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numSpace', -1)">-</button>
+                        <input type="number" id="numSpace" value="2" min="1" max="20" class="w-10 bg-transparent border-none text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                        <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numSpace', 1)">+</button>
                     </div>
                 </div>
             </div>
@@ -1254,6 +1260,20 @@
       const label = document.getElementById('edit-confirm-label');
       setTimeout(() => { label.classList.toggle('checked-confirm', cb.checked); }, 0);
     });
+
+    // =============================================
+    // --- UTILITIES ---
+    // =============================================
+    window.adjustValue = function(id, delta) {
+      const input = document.getElementById(id);
+      let val = parseInt(input.value) || 0;
+      val += delta;
+      const min = parseInt(input.min) || 0;
+      const max = parseInt(input.max) || 100;
+      if (val < min) val = min;
+      if (val > max) val = max;
+      input.value = val;
+    };
 
     // =============================================
     // --- INIT ---
