@@ -1,1 +1,1333 @@
-404: Not Found
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All-in-One Tools — Modern Redesign</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="redesign.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Custom overrides for specific components */
+    .matrix-bg{ position:fixed; inset:0; width:100vw; height:100vh; z-index:-1; opacity:.03; pointer-events:none; }
+    pre#resultDisplay{ font-family: 'JetBrains Mono', monospace; color: var(--primary); line-height:1.7; }
+    .house-highlight { background: var(--accent-soft); color: var(--accent); padding: 0 4px; border-radius: 4px; font-weight: 600; }
+    .pinned-message { border: 2px solid var(--accent); background-color: var(--accent-soft); }
+    .password-dot { font-family: sans-serif; letter-spacing: 2px; font-size: 1.2rem; line-height: 1; color: var(--text-muted); }
+    
+    /* Email Status Styles */
+    .email-status-good { border: 1px solid var(--success); background-color: var(--success-soft); }
+    .email-status-warning { border: 1px solid var(--warning); background-color: #fffbeb; }
+    .email-status-expired { border: 1px solid var(--danger); background-color: var(--danger-soft); }
+
+    /* Checkbox Toggle Icons */
+    .checkbox-icon {
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .checkbox-icon.checked-package {
+      background-color: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .checkbox-icon.checked-confirm {
+      background-color: var(--success-soft);
+      border-color: var(--success);
+      color: var(--success);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Modal Content - ต้องมี background สีขาวชัดเจน */
+    .modal-content {
+      background-color: #ffffff;
+      border: 1px solid var(--border);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+      animation: modalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes modalPop {
+      0% { opacity: 0; transform: scale(0.92) translateY(12px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Address Type Radio Buttons - JS-controlled */
+    .addr-type-label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: var(--bg-input);
+      color: var(--text-muted);
+      font-family: 'Kanit', sans-serif;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+    .addr-type-label:hover {
+      background: var(--bg-card);
+      border-color: var(--border-focus);
+    }
+    .addr-type-label.selected {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Confirm Clear Modal */
+    #clearConfirmModal .modal-content {
+      background-color: #ffffff;
+    }
+
+    /* Delete Address Modal */
+    #deleteAddressModal .modal-content {
+      background-color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <canvas class="matrix-bg" id="matrixCanvas"></canvas>
+  <div id="toast" class="fixed bottom-5 right-5 text-white py-3 px-6 rounded-xl shadow-2xl opacity-0 transform translate-y-10 z-50 transition-all duration-300 font-heading" style="background: linear-gradient(135deg, #2563eb, #0ea5e9);">คัดลอกข้อความแล้ว!</div>
+
+  <!-- Confirm Delete Modal (Board/Email) -->
+  <div id="confirmModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden modal-backdrop">
+    <div class="modal-content rounded-3xl p-8 max-w-sm w-full mx-4 text-center">
+      <div class="mb-4 text-rose-500 text-6xl">⚠️</div>
+      <h3 class="text-2xl font-heading mb-2" style="color: #0f172a;">ยืนยันการลบ?</h3>
+      <p class="mb-8" style="color: #475569; font-size: 0.9rem;">ข้อมูลนี้จะหายไปถาวรและกู้คืนไม่ได้<br>คุณแน่ใจหรือไม่?</p>
+      <div class="flex gap-3">
+        <button id="modalCancelBtn" class="btn-base btn-secondary">ยกเลิก</button>
+        <button id="modalConfirmBtn" class="btn-base btn-danger">ยืนยันลบ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Clear Input Modal (ล้างค่า ส่วนข้อมูลต้นฉบับ) -->
+  <div id="clearConfirmModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden modal-backdrop">
+    <div class="modal-content rounded-3xl p-8 max-w-sm w-full mx-4 text-center">
+      <div class="mb-4 text-amber-500 text-5xl">🗑️</div>
+      <h3 class="text-xl font-heading mb-2" style="color: #0f172a;">ล้างข้อมูล?</h3>
+      <p class="mb-6" style="color: #475569; font-size: 0.9rem;">ข้อความในช่องจะถูกล้างออกทั้งหมด<br>คุณต้องการดำเนินการต่อหรือไม่?</p>
+      <div class="flex gap-3">
+        <button id="clearCancelBtn" class="btn-base btn-secondary">ยกเลิก</button>
+        <button id="clearConfirmBtn" class="btn-base" style="background-color: #f59e0b; color: white; border: none;">ล้างข้อมูล</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Delete Address Modal -->
+  <div id="deleteAddressModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden modal-backdrop">
+    <div class="modal-content rounded-3xl p-8 max-w-sm w-full mx-4 text-center">
+      <div class="mb-4 text-rose-500 text-5xl">🗑️</div>
+      <h3 class="text-xl font-heading mb-2" style="color: #0f172a;">ลบที่อยู่นี้?</h3>
+      <p id="deleteAddressName" class="font-heading mb-1" style="color: #2563eb; font-size: 1rem;"></p>
+      <p class="mb-6" style="color: #475569; font-size: 0.875rem;">ที่อยู่นี้จะถูกลบออกถาวร</p>
+      <div class="flex gap-3">
+        <button id="deleteAddressCancelBtn" class="btn-base btn-secondary">ยกเลิก</button>
+        <button id="deleteAddressConfirmBtn" class="btn-base btn-danger">ยืนยันลบ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden modal-backdrop">
+    <div class="modal-content rounded-3xl p-8 max-w-lg w-full mx-4">
+      <h3 class="text-2xl font-heading mb-6 text-center" style="color: #0f172a;">✏️ แก้ไขข้อมูล</h3>
+      
+      <div class="space-y-5">
+        <div>
+            <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">หัวข้อ / ชื่อเรียก</label>
+            <input id="editTitleInput" type="text" class="input-premium" placeholder="ระบุชื่อเรียก..." />
+        </div>
+        
+        <div id="editMessageContainer" class="space-y-4">
+            <div>
+                <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">ข้อความหลัก</label>
+                <textarea id="editMessageInput" rows="4" class="input-premium" placeholder="พิมพ์ข้อความที่นี่..."></textarea>
+            </div>
+            <div>
+                <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">ลิ้งค์ หรือ โค้ด</label>
+                <textarea id="editExtraMessageInput" rows="2" class="input-premium" placeholder="ใส่ลิ้งค์หรือข้อมูลเพิ่มเติม..."></textarea>
+            </div>
+        </div>
+
+        <div id="editEmailContainer" class="hidden space-y-4">
+             <div>
+                <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">อีเมล / Username</label>
+                <input id="editEmailField" type="text" class="input-premium" />
+             </div>
+             <div>
+                <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">รหัสผ่าน</label>
+                <div class="relative">
+                    <input id="editPasswordField" type="text" class="input-premium" />
+                    <span class="absolute right-4 top-3 text-xs font-heading" style="color: #94a3b8;">Visible</span>
+                </div>
+             </div>
+             <div>
+                <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">สถานะ</label>
+                <div class="flex gap-6 mt-2">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="radio" name="edit-email-status" value="0" class="w-5 h-5 accent-rose-500">
+                        <span class="text-lg">❌</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="radio" name="edit-email-status" value="1" class="w-5 h-5 accent-amber-500">
+                        <span class="text-lg">⏱️</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="radio" name="edit-email-status" value="2" class="w-5 h-5 accent-emerald-500">
+                        <span class="text-lg">✅</span>
+                    </label>
+                </div>
+             </div>
+             <div>
+                <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">ตัวเลือกเพิ่มเติม</label>
+                <div class="flex flex-wrap gap-4 mt-2">
+                    <label class="checkbox-icon" id="edit-package-label">
+                        <input type="checkbox" id="edit-package-checkbox" class="hidden">
+                        <span>📦 ได้รับเลขพัสดุ</span>
+                    </label>
+                    <label class="checkbox-icon" id="edit-confirm-label">
+                        <input type="checkbox" id="edit-confirm-checkbox" class="hidden">
+                        <span>🤝 กดยืนยันสินค้า</span>
+                    </label>
+                </div>
+             </div>
+        </div>
+      </div>
+
+      <div class="flex gap-3 justify-end mt-8">
+        <button id="editCancelBtn" class="btn-base btn-secondary">ยกเลิก</button>
+        <button id="editSaveBtn" class="btn-base btn-primary">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container mx-auto max-w-4xl p-4 sm:p-6">
+
+    <nav class="tab-container">
+      <div id="btn-address-tab" class="tab-item active">🔐 สร้างที่อยู่ลับ</div>
+      <div id="btn-board-tab" class="tab-item">💬 บอร์ดข้อความ</div>
+      <div id="btn-email-tab" class="tab-item">📧 จัดการอีเมล</div>
+    </nav>
+
+    <main>
+      <!-- Address Tab -->
+      <section id="address-tab">
+        <div class="text-center mb-10">
+          <h1 class="text-4xl font-heading mb-2">🔐 โปรแกรมสร้างที่อยู่ลับ</h1>
+          <p class="text-hint">เครื่องมือสร้างที่อยู่และเบอร์โทรศัพท์แบบสุ่มและพรางตัว</p>
+        </div>
+
+        <div class="card-premium">
+            <h3 class="font-heading text-lg mb-4 flex items-center gap-2">✨ ข้อมูลต้นฉบับ</h3>
+            
+            <div class="flex gap-3 mb-4">
+                <button class="btn-base btn-primary" id="btnPaste">📋 วางข้อมูล</button>
+                <button class="btn-base btn-secondary" id="btnClear">🗑️ ล้างค่า</button>
+            </div>
+
+            <textarea id="inputArea" class="textarea-premium mb-4" placeholder="กรอก หรือ วางข้อความที่นี่ (เช่น 82/7 หมู่ 4)..."></textarea>
+            
+            <div class="space-y-3">
+                <label class="block text-hint font-heading">📍 เลือกที่อยู่ที่บันทึกไว้</label>
+                <select id="savedAddressSelect" class="input-premium">
+                    <option value="">-- เลือกที่อยู่ --</option>
+                    <optgroup label="🏠 ส่วนตัว" id="group-personal"></optgroup>
+                    <optgroup label="👥 ของลูกค้า" id="group-customer"></optgroup>
+                </select>
+            </div>
+        </div>
+
+        <!-- Collapsible: Add New Address -->
+        <div class="card-premium p-0 overflow-hidden">
+            <div class="collapse-header" id="toggleAddAddress">
+                <div class="flex items-center gap-3">
+                    <span class="text-xl">➕</span>
+                    <span class="font-heading">เพิ่มที่อยู่ใหม่</span>
+                </div>
+                <span id="collapseIcon" class="transition-transform duration-300">▼</span>
+            </div>
+            <div id="addAddressContent" class="hidden p-5 space-y-4 border-t border-border">
+                <div class="flex gap-2 mb-2">
+                    <button class="btn-base btn-secondary py-2 text-xs" id="btnPasteNewAddress">📋 วางจากคลิปบอร์ด</button>
+                    <button class="btn-base btn-secondary py-2 text-xs" id="btnClearNewAddress">🗑️ ล้างค่า</button>
+                </div>
+                <div>
+                    <label class="block text-hint font-heading mb-2">ชื่อเรียก (เช่น บ้านเนม)</label>
+                    <input type="text" id="newAddressName" class="input-premium" placeholder="ระบุชื่อเรียก...">
+                </div>
+                <div>
+                    <label class="block text-hint font-heading mb-2">ประเภทที่อยู่</label>
+                    <div class="flex gap-3 mt-1" id="addressTypeContainer">
+                        <div class="addr-type-label selected" data-value="personal" id="typePersonalLabel">
+                            <input type="radio" name="addressType" value="personal" checked class="hidden" id="typePersonalRadio">
+                            <span>🏠 ส่วนตัว</span>
+                        </div>
+                        <div class="addr-type-label" data-value="customer" id="typeCustomerLabel">
+                            <input type="radio" name="addressType" value="customer" class="hidden" id="typeCustomerRadio">
+                            <span>👥 ของลูกค้า</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-hint font-heading mb-2">ที่อยู่เต็ม</label>
+                    <textarea id="newAddressFull" class="input-premium" style="min-height: 80px;" placeholder="ระบุที่อยู่เต็ม..."></textarea>
+                </div>
+                <button class="btn-base btn-primary" id="btnSaveNewAddress">💾 บันทึกที่อยู่</button>
+                
+                <div class="mt-6">
+                    <label class="block text-hint font-heading mb-3">รายการที่บันทึกไว้</label>
+                    <div id="addressListContainer" class="space-y-2">
+                        <!-- Address items will be here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-premium">
+            <h3 class="font-heading text-lg mb-6 flex items-center gap-2">⚡ ตั้งค่าความหนาแน่น</h3>
+            
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="checkFake" checked class="w-5 h-5 accent-accent">
+                        <span class="font-heading">สระ/วรรณยุกต์หลอก</span>
+                    </label>
+                    <div class="flex items-center gap-3 bg-bg-input px-3 py-2 rounded-xl border border-border">
+                        <span class="text-xs text-muted font-heading">จำนวน:</span>
+                        <input type="number" id="numFake" value="3" min="1" max="10" class="w-10 bg-transparent border-none text-center font-bold outline-none">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="checkInvisible" checked class="w-5 h-5 accent-accent">
+                        <span class="font-heading">อักขระล่องหน</span>
+                    </label>
+                    <div class="flex items-center gap-3 bg-bg-input px-3 py-2 rounded-xl border border-border">
+                        <span class="text-xs text-muted font-heading">จำนวน:</span>
+                        <input type="number" id="numInvisible" value="5" min="1" max="20" class="w-10 bg-transparent border-none text-center font-bold outline-none">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="checkSpace" checked class="w-5 h-5 accent-accent">
+                        <span class="font-heading">สุ่มเว้นวรรค</span>
+                    </label>
+                    <div class="flex items-center gap-3 bg-bg-input px-3 py-2 rounded-xl border border-border">
+                        <span class="text-xs text-muted font-heading">จำนวน:</span>
+                        <input type="number" id="numSpace" value="2" min="1" max="10" class="w-10 bg-transparent border-none text-center font-bold outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-base btn-primary mt-8 py-4 text-lg" id="btnGenerate">สร้างข้อความพราง ✨</button>
+        </div>
+      </section>
+
+      <!-- Board Tab -->
+      <section id="board-tab" class="hidden">
+        <div class="text-center mb-10">
+          <h1 class="text-4xl font-heading mb-2">💬 บอร์ดข้อความ</h1>
+          <p class="text-hint">พื้นที่สำหรับจดบันทึกและจัดการข้อความสำคัญ</p>
+        </div>
+
+         <div class="card-premium">
+            <div class="space-y-4">
+                <input id="boardTitleInput" type="text" class="input-premium" placeholder="หัวข้อข้อความ..." />
+                <textarea id="boardMessageInput" rows="3" class="input-premium" placeholder="พิมพ์ข้อความที่นี่..."></textarea>
+                <div class="flex gap-3">
+                    <textarea id="boardExtraInput" rows="2" class="input-premium flex-1" placeholder="ลิ้งค์ หรือ โค้ดเพิ่มเติม (ถ้ามี)..."></textarea>
+                    <button id="quickPasteBoardBtn" class="btn-base btn-primary py-2 text-xs" style="white-space: nowrap; height: fit-content;">📋 วาง</button>
+                </div>
+                <button id="saveBoardBtn" class="btn-base btn-primary">💾 บันทึกข้อความ</button>
+            </div>
+        </div>
+
+        <div class="flex gap-3 mb-6">
+            <input id="searchBoardInput" type="text" class="input-premium" placeholder="🔍 ค้นหาข้อความ..." />
+        </div>
+
+        <div id="board-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Board messages will be here -->
+        </div>
+      </section>
+
+      <!-- Email Tab -->
+      <section id="email-tab" class="hidden">
+        <div class="text-center mb-10">
+          <h1 class="text-4xl font-heading mb-2">📧 จัดการอีเมล</h1>
+          <p class="text-hint">ระบบจัดการบัญชีอีเมลและสถานะการจัดส่ง</p>
+        </div>
+
+        <div class="card-premium" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%); border: 1px solid rgba(34, 197, 94, 0.3);">
+            <div class="space-y-3">
+                <label class="block text-hint font-heading">🚀 วางด่วน (email|password)</label>
+                <div class="flex gap-3">
+                    <textarea id="quickPasteEmailInput" rows="2" class="input-premium flex-1" placeholder="วางข้อมูล เช่น user@email.com|password123..."></textarea>
+                    <button id="quickPasteEmailBtn" class="btn-base btn-primary py-2 text-xs" style="white-space: nowrap; height: fit-content;">📋 วาง</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-premium">
+            <div class="space-y-4">
+                <input id="emailTitleInput" type="text" class="input-premium" placeholder="ชื่อเรียก / หัวข้อ..." />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <input id="emailFieldInput" type="text" class="input-premium" placeholder="อีเมล / Username" />
+                    <input id="passwordFieldInput" type="text" class="input-premium" placeholder="รหัสผ่าน" />
+                </div>
+                <button id="saveEmailBtn" class="btn-base btn-primary">💾 บันทึกบัญชี</button>
+            </div>
+        </div>
+
+        <div class="card-premium">
+            <div class="space-y-4">
+                <input id="searchEmailInput" type="text" class="input-premium" placeholder="🔍 ค้นหาอีเมล หรือ ชื่อเรียก..." />
+                
+                <div class="flex flex-wrap items-center gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer font-heading text-sm">
+                        <input type="checkbox" id="filterPendingCheckbox" class="w-5 h-5 accent-accent">
+                        <span>📦 ได้รับเลขแล้ว แต่ยังไม่ยืนยัน 🤝</span>
+                    </label>
+                    <div class="flex items-center gap-2 ml-auto">
+                        <input type="date" id="startDateInput" class="input-premium py-2 text-xs w-auto" />
+                        <span class="text-muted">-</span>
+                        <input type="date" id="endDateInput" class="input-premium py-2 text-xs w-auto" />
+                        <button id="clearFilterBtn" class="btn-base btn-secondary py-2 px-4 text-xs w-auto">ล้างค่า</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="email-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Email cards will be here -->
+        </div>
+      </section>
+    </main>
+
+    <footer class="mt-20 pb-10 text-center">
+        <p class="text-hint font-heading">Website Design by <span class="text-accent">FB: nickname rittipon</span></p>
+    </footer>
+  </div>
+
+  <!-- Result Modal -->
+  <div id="resultModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden modal-backdrop">
+    <div class="modal-content rounded-3xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-heading" style="color: #0f172a;">✨ ข้อความพรางที่สร้างเสร็จแล้ว</h3>
+            <button id="closeResultBtn" class="text-2xl hover:text-rose-500 transition-colors" style="color: #94a3b8;">✕</button>
+        </div>
+        
+        <div id="resultList" class="space-y-6">
+            <!-- Results will be here -->
+        </div>
+    </div>
+  </div>
+
+  <script>
+    // --- TAB SYSTEM ---
+    const tabs = {
+      'btn-address-tab': 'address-tab',
+      'btn-board-tab': 'board-tab',
+      'btn-email-tab': 'email-tab'
+    };
+
+    Object.keys(tabs).forEach(tabId => {
+      document.getElementById(tabId).addEventListener('click', () => {
+        document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        Object.values(tabs).forEach(sectionId => {
+          document.getElementById(sectionId).classList.add('hidden');
+        });
+        document.getElementById(tabs[tabId]).classList.remove('hidden');
+      });
+    });
+
+    // --- COLLAPSIBLE ---
+    const toggleAddAddress = document.getElementById('toggleAddAddress');
+    const addAddressContent = document.getElementById('addAddressContent');
+    const collapseIcon = document.getElementById('collapseIcon');
+
+    toggleAddAddress.addEventListener('click', () => {
+      const isHidden = addAddressContent.classList.contains('hidden');
+      if (isHidden) {
+        addAddressContent.classList.remove('hidden');
+        collapseIcon.style.transform = 'rotate(180deg)';
+      } else {
+        addAddressContent.classList.add('hidden');
+        collapseIcon.style.transform = 'rotate(0deg)';
+      }
+    });
+
+    // --- ADDRESS TYPE RADIO (JS-controlled) ---
+    const typeLabels = document.querySelectorAll('.addr-type-label');
+    typeLabels.forEach(label => {
+      label.addEventListener('click', () => {
+        typeLabels.forEach(l => l.classList.remove('selected'));
+        label.classList.add('selected');
+        const radio = label.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+      });
+    });
+
+    // --- MATRIX BACKGROUND ---
+    (() => {
+      const canvas = document.getElementById('matrixCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}";
+      const matrixArray = matrix.split("");
+      const fontSize = 10;
+      const columns = canvas.width / fontSize;
+      const drops = [];
+      for (let x = 0; x < columns; x++) { drops[x] = 1; }
+      function draw() {
+        ctx.fillStyle = 'rgba(248, 250, 252, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = fontSize + 'px monospace';
+        for (let i = 0; i < drops.length; i++) {
+          const text = matrixArray[Math.floor(Math.random() * matrixArray.length)];
+          ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+          if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) { drops[i] = 0; }
+          drops[i]++;
+        }
+      }
+      setInterval(draw, 35);
+      window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+    })();
+
+    // --- SUPABASE & APP LOGIC ---
+    const SUPABASE_URL = "https://uromhoezcxkhilxchxxe.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVyb21ob2V6Y3hraGlseGNoeHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjEyOTUsImV4cCI6MjA2ODY5NzI5NX0.UDABYee8_JDlZHkKGzz6bQG0v95H86uLAP6WIN75Y7o";
+    const EMAIL_PREFIX = "vault://";
+    const EMAIL_SEPARATOR = "|::|";
+
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let currentEmailsList = [];
+    let currentMessagesList = [];
+    let allMessagesList = [];
+    let emailDisplayCount = 10;
+    let boardDisplayCount = 10;
+    let messageIdToDelete = null;
+    let messageIdToEdit = null;
+    let isEditingEmailMode = false;
+    let addressIndexToDelete = null;
+
+    // Toast Function
+    function showToast(msg = 'คัดลอกข้อความแล้ว!') {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-10');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-10');
+      }, 2000);
+    }
+
+    // Copy Function
+    function copyTextToClipboard(text, button) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast();
+        if (button && button.tagName === 'BUTTON') {
+          const oldHTML = button.innerHTML;
+          button.innerHTML = '✅ สำเร็จ!';
+          setTimeout(() => { button.innerHTML = oldHTML; }, 2000);
+        }
+      }).catch(err => { console.error('Failed to copy text: ', err); });
+    }
+
+    // Escape HTML
+    function escapeHTML(str) {
+      const p = document.createElement('p');
+      p.textContent = str;
+      return p.innerHTML;
+    }
+
+    // =============================================
+    // --- ADDRESS SYSTEM ---
+    // =============================================
+    function initAddressSystem() {
+      const select = document.getElementById('savedAddressSelect');
+      const inputArea = document.getElementById('inputArea');
+      const groupPersonal = document.getElementById('group-personal');
+      const groupCustomer = document.getElementById('group-customer');
+      const addressListContainer = document.getElementById('addressListContainer');
+      
+      const defaultAddresses = [
+        { name: "บ้านเนม", address: "82/7 หมู่บ้านไทยสมุทร 2 เบอโทร 0951698770 ลาดกระบัง 16 ราชาเทวะ สมุทรปราการ 10540", type: "personal" },
+        { name: "บ้านแน้ค", address: "123/45 หมู่ 6 ต.บางรัก อ.เมือง จ.นนทบุรี 11000", type: "personal" },
+        { name: "บ้านมินท์", address: "99/1 ซอยสุขุมวิท 101 แขวงบางจาก เขตพระโขนง กรุงเทพฯ 10260", type: "personal" },
+        { name: "บ้านเฟิร์ส", address: "55/88 หมู่บ้านกรีนวิลล์ ถ.พุทธมณฑลสาย 2 แขวงศาลาธรรมสพน์ เขตทวีวัฒนา กรุงเทพฯ 10170", type: "personal" }
+      ];
+
+      function updateDisplay() {
+        groupPersonal.innerHTML = '';
+        groupCustomer.innerHTML = '';
+        addressListContainer.innerHTML = '';
+        
+        // Initialize localStorage with default addresses if first time
+        if (!localStorage.getItem('address_initialized_v2')) {
+          localStorage.setItem('user_saved_addresses_v2', JSON.stringify(defaultAddresses));
+          localStorage.setItem('address_initialized_v2', 'true');
+        }
+        
+        const all = JSON.parse(localStorage.getItem('user_saved_addresses_v2') || '[]');
+        
+        all.forEach((item, index) => {
+          // Add to Select dropdown
+          const opt = document.createElement('option');
+          opt.value = item.address;
+          opt.textContent = item.name;
+          if (item.type === 'customer') {
+            groupCustomer.appendChild(opt);
+          } else {
+            groupPersonal.appendChild(opt);
+          }
+          
+          // Add to List display
+          const div = document.createElement('div');
+          div.className = "flex items-center justify-between p-3 bg-bg-input rounded-xl border border-border";
+          div.innerHTML = `
+            <div class="flex flex-col flex-1 min-w-0 mr-2">
+              <span class="font-heading text-sm">${escapeHTML(item.name)} ${item.type === 'personal' ? '🏠' : '👥'}</span>
+              <span class="text-[10px] text-hint truncate">${escapeHTML(item.address)}</span>
+            </div>
+            <button class="del-addr-btn flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-rose-50 transition-colors" data-index="${index}" data-name="${escapeHTML(item.name)}" title="ลบที่อยู่นี้">
+              <span class="text-rose-400 hover:text-rose-600 text-base">🗑️</span>
+            </button>
+          `;
+          
+          const delBtn = div.querySelector('.del-addr-btn');
+          if (delBtn) {
+            delBtn.addEventListener('click', () => {
+              const idx = parseInt(delBtn.dataset.index);
+              const name = delBtn.dataset.name;
+              // Show delete confirm modal
+              document.getElementById('deleteAddressName').textContent = `"${name}"`;
+              addressIndexToDelete = idx;
+              document.getElementById('deleteAddressModal').classList.remove('hidden');
+            });
+          }
+          
+          addressListContainer.appendChild(div);
+        });
+
+        // Show empty state if no addresses
+        if (all.length === 0) {
+          const emptyDiv = document.createElement('div');
+          emptyDiv.className = "text-center py-4 text-hint text-sm";
+          emptyDiv.textContent = "ยังไม่มีที่อยู่ที่บันทึกไว้";
+          addressListContainer.appendChild(emptyDiv);
+        }
+      }
+
+      // Select address → fill input
+      select.addEventListener('change', (e) => {
+        if (e.target.value) {
+          inputArea.value = e.target.value;
+          showToast('โหลดที่อยู่แล้ว');
+        }
+      });
+
+      // Paste button
+      document.getElementById('btnPaste').onclick = async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          inputArea.value = text;
+          showToast('วางข้อมูลแล้ว');
+        } catch (err) { alert('ไม่สามารถเข้าถึง Clipboard ได้'); }
+      };
+
+      // Clear button → show confirm modal
+      document.getElementById('btnClear').onclick = () => {
+        if (!inputArea.value.trim()) {
+          showToast('ไม่มีข้อมูลให้ล้าง');
+          return;
+        }
+        document.getElementById('clearConfirmModal').classList.remove('hidden');
+      };
+
+      // Clear Confirm Modal handlers
+      document.getElementById('clearCancelBtn').onclick = () => {
+        document.getElementById('clearConfirmModal').classList.add('hidden');
+      };
+      document.getElementById('clearConfirmBtn').onclick = () => {
+        inputArea.value = '';
+        document.getElementById('clearConfirmModal').classList.add('hidden');
+        showToast('ล้างข้อมูลแล้ว');
+      };
+
+      // New Address: Paste button
+      document.getElementById('btnPasteNewAddress').onclick = async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          document.getElementById('newAddressFull').value = text;
+          showToast('วางข้อมูลแล้ว');
+        } catch (err) { alert('ไม่สามารถเข้าถึง Clipboard ได้'); }
+      };
+
+      // New Address: Clear button
+      document.getElementById('btnClearNewAddress').onclick = () => {
+        document.getElementById('newAddressName').value = '';
+        document.getElementById('newAddressFull').value = '';
+        // Reset type selection
+        document.querySelectorAll('.addr-type-label').forEach(l => l.classList.remove('selected'));
+        document.getElementById('typePersonalLabel').classList.add('selected');
+        document.getElementById('typePersonalRadio').checked = true;
+        showToast('ล้างข้อมูลแล้ว');
+      };
+
+      // Save new address
+      document.getElementById('btnSaveNewAddress').onclick = () => {
+        const name = document.getElementById('newAddressName').value.trim();
+        const address = document.getElementById('newAddressFull').value.trim();
+        const checkedRadio = document.querySelector('input[name="addressType"]:checked');
+        const type = checkedRadio ? checkedRadio.value : 'personal';
+        
+        if (!name || !address) {
+          alert('กรุณากรอกชื่อเรียกและที่อยู่ให้ครบถ้วน');
+          return;
+        }
+        
+        const current = JSON.parse(localStorage.getItem('user_saved_addresses_v2') || '[]');
+        current.push({ name, address, type, isDefault: false });
+        localStorage.setItem('user_saved_addresses_v2', JSON.stringify(current));
+        
+        document.getElementById('newAddressName').value = '';
+        document.getElementById('newAddressFull').value = '';
+        updateDisplay();
+        showToast('บันทึกที่อยู่ใหม่แล้ว ✅');
+      };
+
+      // Delete Address Modal handlers
+      document.getElementById('deleteAddressCancelBtn').onclick = () => {
+        document.getElementById('deleteAddressModal').classList.add('hidden');
+        addressIndexToDelete = null;
+      };
+      document.getElementById('deleteAddressConfirmBtn').onclick = () => {
+        if (addressIndexToDelete !== null) {
+          const current = JSON.parse(localStorage.getItem('user_saved_addresses_v2') || '[]');
+          current.splice(addressIndexToDelete, 1);
+          localStorage.setItem('user_saved_addresses_v2', JSON.stringify(current));
+          updateDisplay();
+          showToast('ลบที่อยู่แล้ว 🗑️');
+        }
+        document.getElementById('deleteAddressModal').classList.add('hidden');
+        addressIndexToDelete = null;
+      };
+
+      updateDisplay();
+    }
+
+    // =============================================
+    // --- GENERATE CAMOUFLAGE TEXT ---
+    // =============================================
+    (() => {
+      // Thai vowels and tone marks for fake injection
+      const fakeVowels = ['ั', 'า', 'ิ', 'ี', 'ึ', 'ื', 'ุ', 'ู', 'เ', 'แ', 'โ', 'ใ', 'ไ'];
+      const fakeTones = ['่', '้', '๊', '๋'];
+      const invisibleChars = ['\u200B', '\u200C', '\u200D', '\uFEFF', '\u2060'];
+      const extraSpaces = ['\u00A0', '\u2002', '\u2003', '\u2009'];
+
+      function insertFakeChars(text, numFake) {
+        if (!text || numFake <= 0) return text;
+        const chars = text.split('');
+        const allFake = [...fakeVowels, ...fakeTones];
+        let inserted = 0;
+        while (inserted < numFake) {
+          const pos = Math.floor(Math.random() * chars.length);
+          const fake = allFake[Math.floor(Math.random() * allFake.length)];
+          chars.splice(pos, 0, fake);
+          inserted++;
+        }
+        return chars.join('');
+      }
+
+      function insertInvisibleChars(text, numInvisible) {
+        if (!text || numInvisible <= 0) return text;
+        const chars = text.split('');
+        for (let i = 0; i < numInvisible; i++) {
+          const pos = Math.floor(Math.random() * chars.length);
+          const inv = invisibleChars[Math.floor(Math.random() * invisibleChars.length)];
+          chars.splice(pos, 0, inv);
+        }
+        return chars.join('');
+      }
+
+      function insertExtraSpaces(text, numSpace) {
+        if (!text || numSpace <= 0) return text;
+        const words = text.split(' ');
+        if (words.length < 2) return text;
+        for (let i = 0; i < numSpace; i++) {
+          const pos = Math.floor(Math.random() * (words.length - 1)) + 1;
+          const sp = extraSpaces[Math.floor(Math.random() * extraSpaces.length)];
+          words[pos] = sp + words[pos];
+        }
+        return words.join(' ');
+      }
+
+      function generateCamouflage() {
+        const inputText = document.getElementById('inputArea').value.trim();
+        if (!inputText) {
+          alert('กรุณากรอกหรือวางข้อมูลที่อยู่ก่อน');
+          return;
+        }
+
+        const useFake = document.getElementById('checkFake').checked;
+        const useInvisible = document.getElementById('checkInvisible').checked;
+        const useSpace = document.getElementById('checkSpace').checked;
+        const numFake = parseInt(document.getElementById('numFake').value) || 3;
+        const numInvisible = parseInt(document.getElementById('numInvisible').value) || 5;
+        const numSpace = parseInt(document.getElementById('numSpace').value) || 2;
+
+        // Generate 3 variations
+        const results = [];
+        for (let v = 0; v < 3; v++) {
+          let text = inputText;
+          if (useFake) text = insertFakeChars(text, numFake);
+          if (useInvisible) text = insertInvisibleChars(text, numInvisible);
+          if (useSpace) text = insertExtraSpaces(text, numSpace);
+          results.push(text);
+        }
+
+        // Show result modal
+        const resultList = document.getElementById('resultList');
+        resultList.innerHTML = '';
+        results.forEach((res, idx) => {
+          const div = document.createElement('div');
+          div.className = "p-4 rounded-2xl border border-border bg-bg-input";
+          div.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+              <span class="font-heading text-sm" style="color: #2563eb;">รูปแบบที่ ${idx + 1}</span>
+              <button class="copy-result-btn btn-base btn-primary py-1 px-4 text-xs" style="width: auto;">📋 คัดลอก</button>
+            </div>
+            <p class="text-sm whitespace-pre-wrap break-all" style="color: #0f172a; font-family: 'JetBrains Mono', monospace; line-height: 1.8;">${escapeHTML(res)}</p>
+          `;
+          div.querySelector('.copy-result-btn').onclick = (e) => copyTextToClipboard(res, e.target);
+          resultList.appendChild(div);
+        });
+
+        document.getElementById('resultModal').classList.remove('hidden');
+      }
+
+      document.getElementById('btnGenerate').addEventListener('click', generateCamouflage);
+      document.getElementById('closeResultBtn').addEventListener('click', () => {
+        document.getElementById('resultModal').classList.add('hidden');
+      });
+      // Close modal on backdrop click
+      document.getElementById('resultModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('resultModal')) {
+          document.getElementById('resultModal').classList.add('hidden');
+        }
+      });
+    })();
+
+    // =============================================
+    // --- REALTIME & DATA LOADING ---
+    // =============================================
+    async function loadData() {
+      const { data, error } = await sb.from('links').select('*').order('created_at', { ascending: false });
+      if (error) return;
+
+      const emails = [];
+      const messages = [];
+
+      data.forEach(row => {
+        const item = {
+          id: row.id,
+          title: row.title || '',
+          rawUrl: row.url || '',
+          isPinned: !!row.is_pinned,
+          created_at: row.created_at
+        };
+
+        if (item.rawUrl.startsWith(EMAIL_PREFIX)) {
+          const content = item.rawUrl.replace(EMAIL_PREFIX, '');
+          const parts = content.split(EMAIL_SEPARATOR);
+          item.email = parts[0] || '';
+          item.password = parts[1] || '';
+          item.status = parts[3] || '0';
+          item.packageReceived = parts[4] === '1';
+          item.confirmReceived = parts[5] === '1';
+          emails.push(item);
+        } else {
+          if (item.rawUrl.includes('\n|||EXTRA|||\n')) {
+            const parts = item.rawUrl.split('\n|||EXTRA|||\n');
+            item.text = parts[0];
+            item.extra = parts[1];
+          } else {
+            item.text = item.rawUrl;
+            item.extra = '';
+          }
+          messages.push(item);
+        }
+      });
+
+      currentEmailsList = emails;
+      allMessagesList = messages;
+      emailDisplayCount = 10;
+      boardDisplayCount = 10;
+      renderMessages(messages);
+      renderEmails(emails);
+    }
+
+    // Helper functions for code/URL detection
+    function isLikelyUrl(str) {
+      if (str.includes(' ')) return false;
+      if (/^https?:\/\//i.test(str)) return true;
+      if (/^www\./i.test(str)) return true;
+      if (/^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}(\/.*)?$/.test(str)) return true;
+      return false;
+    }
+    
+    function ensureHttp(str) {
+      if (/^https?:\/\//i.test(str)) return str;
+      return 'https://' + str;
+    }
+    
+    function renderExtraContent(extra) {
+      if (!extra) return '';
+      const lines = extra.split('\n').filter(l => l.trim());
+      let content = '<div class="space-y-2">';
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (isLikelyUrl(trimmed)) {
+          const safeText = escapeHTML(trimmed);
+          content += `<div>${safeText}</div>`;
+        } else {
+          const safeCode = escapeHTML(trimmed);
+          content += `<div><button class="btn-copy-extra text-left text-accent hover:text-primary transition-colors break-all text-xs py-1 px-2 rounded" data-code="${safeCode}">📋 ${safeCode}</button></div>`;
+        }
+      });
+      content += '</div>';
+      return content;
+    }
+
+    function renderMessages(messages) {
+      const container = document.getElementById('board-container');
+      container.innerHTML = '';
+      if (messages.length === 0) {
+        container.innerHTML = '<p class="text-center text-hint col-span-2 py-8">ยังไม่มีข้อความ</p>';
+        return;
+      }
+      
+      // Store for pagination
+      currentMessagesList = messages;
+      
+      // Display only first boardDisplayCount items
+      const displayMessages = messages.slice(0, boardDisplayCount);
+      displayMessages.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `card-premium ${msg.isPinned ? 'pinned-message' : ''}`;
+        div.innerHTML = `
+          <div class="flex justify-between items-start mb-3">
+            <h4 class="font-heading text-primary">${escapeHTML(msg.title || 'ไม่มีหัวข้อ')}</h4>
+            <div class="flex gap-2">
+              <button class="text-hint hover:text-primary edit-btn transition-colors">✏️</button>
+              <button class="text-hint hover:text-rose-500 del-btn transition-colors">🗑️</button>
+            </div>
+          </div>
+          <p class="text-sm mb-4 whitespace-pre-wrap">${escapeHTML(msg.text)}</p>
+          ${msg.extra ? `<div class="text-xs text-hint bg-bg-input p-3 rounded-lg mb-4 break-all">${renderExtraContent(msg.extra)}</div>` : ''}
+          <div class="flex gap-2">
+            <button class="btn-base btn-secondary py-2 text-xs copy-btn">📋 คัดลอก</button>
+            <button class="btn-base btn-secondary py-2 text-xs pin-btn">${msg.isPinned ? '📍 เลิกปัก' : '📌 ปักหมุด'}</button>
+          </div>
+        `;
+        
+        div.querySelector('.copy-btn').onclick = (e) => copyTextToClipboard(msg.text, e.target);
+        div.querySelector('.pin-btn').onclick = () => togglePin(msg.id, msg.isPinned);
+        div.querySelector('.del-btn').onclick = () => { messageIdToDelete = msg.id; document.getElementById('confirmModal').classList.remove('hidden'); };
+        div.querySelector('.edit-btn').onclick = () => openEditModal(msg.id, msg.title, msg.text, false, '', '', '0', msg.extra);
+        
+        // Add copy button listeners for extra content
+        const copyBtns = div.querySelectorAll('.btn-copy-extra');
+        copyBtns.forEach(btn => {
+          btn.onclick = (e) => {
+            const code = btn.dataset.code;
+            copyTextToClipboard(code, btn);
+          };
+        });
+        
+        container.appendChild(div);
+      });
+      
+      // Update load more buttons
+      updateLoadMoreButtons();
+    }
+
+    function renderEmails(emails) {
+      const container = document.getElementById('email-container');
+      container.innerHTML = '';
+      
+      const filterPending = document.getElementById('filterPendingCheckbox').checked;
+      const searchTerm = document.getElementById('searchEmailInput').value.toLowerCase();
+      
+      const filtered = emails.filter(mail => {
+        const matchesSearch = mail.title.toLowerCase().includes(searchTerm) || mail.email.toLowerCase().includes(searchTerm);
+        const matchesPending = filterPending ? (mail.packageReceived && !mail.confirmReceived) : true;
+        return matchesSearch && matchesPending;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<p class="text-center text-hint col-span-2 py-8">ไม่พบข้อมูลอีเมล</p>';
+        return;
+      }
+
+      // Store for pagination
+      currentEmailsList = filtered;
+      
+      // Display only first emailDisplayCount items
+      const displayEmails = filtered.slice(0, emailDisplayCount);
+      displayEmails.forEach(mail => {
+        const div = document.createElement('div');
+        let statusClass = mail.status === '2' ? 'email-status-good' : (mail.status === '1' ? 'email-status-warning' : 'email-status-expired');
+        div.className = `card-premium ${statusClass}`;
+        div.innerHTML = `
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h4 class="font-heading">${escapeHTML(mail.title)}</h4>
+              <span class="text-[10px] text-hint">${mail.status === '2' ? '✅ ใช้งานแล้ว' : (mail.status === '1' ? '⏱️ รอใช้งาน' : '❌ ไม่ได้ใช้')}</span>
+            </div>
+            <div class="flex gap-2">
+              <button class="text-hint hover:text-primary edit-btn transition-colors">✏️</button>
+              <button class="text-hint hover:text-rose-500 del-btn transition-colors">🗑️</button>
+            </div>
+          </div>
+          <div class="space-y-2 mb-4">
+            <div class="bg-bg-input p-2 rounded-lg text-xs font-mono truncate">${escapeHTML(mail.email)}</div>
+            <div class="bg-bg-input p-2 rounded-lg text-xs font-mono flex justify-between items-center">
+              <span class="pass-text">••••••••</span>
+              <button class="text-[10px] text-primary toggle-pass">👁️</button>
+            </div>
+          </div>
+          <div class="flex gap-2 mb-4">
+            <button class="checkbox-icon pkg-icon ${mail.packageReceived ? 'checked-package' : ''} text-[10px] py-1 px-2 cursor-pointer transition-all" style="border: none; background: inherit; padding: 8px 14px; border-radius: 10px;">📦 ได้รับเลข</button>
+            <button class="checkbox-icon conf-icon ${mail.confirmReceived ? 'checked-confirm' : ''} text-[10px] py-1 px-2 cursor-pointer transition-all" style="border: none; background: inherit; padding: 8px 14px; border-radius: 10px;">🤝 ยืนยันแล้ว</button>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="btn-base btn-primary py-2 text-xs copy-email">📋 เมล</button>
+            <button class="btn-base btn-secondary py-2 text-xs copy-pass">🔑 รหัส</button>
+          </div>
+        `;
+
+        div.querySelector('.toggle-pass').onclick = (e) => {
+          const passEl = div.querySelector('.pass-text');
+          if (passEl.textContent === '••••••••') {
+            passEl.textContent = mail.password;
+            e.target.textContent = '🙈';
+          } else {
+            passEl.textContent = '••••••••';
+            e.target.textContent = '👁️';
+          }
+        };
+
+        div.querySelector('.copy-email').onclick = (e) => copyTextToClipboard(mail.email, e.target);
+        div.querySelector('.copy-pass').onclick = (e) => copyTextToClipboard(mail.password, e.target);
+        div.querySelector('.del-btn').onclick = () => { messageIdToDelete = mail.id; document.getElementById('confirmModal').classList.remove('hidden'); };
+        div.querySelector('.edit-btn').onclick = () => openEditModal(mail.id, mail.title, '', true, mail.email, mail.password, mail.status, '', mail.packageReceived, mail.confirmReceived);
+        
+        const pkgBtn = div.querySelector('.pkg-icon');
+        const confBtn = div.querySelector('.conf-icon');
+        if (pkgBtn) pkgBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.packageReceived; try { await sb.from('links').update({ package_received: ns }).eq('id', mail.id); mail.packageReceived = ns; pkgBtn.classList.toggle('checked-package', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
+        if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { await sb.from('links').update({ confirm_received: ns }).eq('id', mail.id); mail.confirmReceived = ns; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
+        
+        container.appendChild(div);
+      });
+      
+      // Update load more buttons
+      updateLoadMoreButtons();
+    }
+
+    // =============================================
+    // --- ACTIONS ---
+    // =============================================
+    async function togglePin(id, current) {
+      await sb.from('links').update({ is_pinned: !current }).eq('id', id);
+      loadData();
+    }
+
+    document.getElementById('modalConfirmBtn').onclick = async () => {
+      if (messageIdToDelete) {
+        const btn = document.getElementById('modalConfirmBtn');
+        btn.textContent = 'กำลังลบ...';
+        try {
+          await sb.from('links').delete().eq('id', messageIdToDelete);
+          showToast('ลบข้อมูลแล้ว 🗑️');
+          loadData();
+        } catch(e) { alert('เกิดข้อผิดพลาด: ' + e.message); }
+        finally {
+          btn.textContent = 'ยืนยันลบ';
+          messageIdToDelete = null;
+          document.getElementById('confirmModal').classList.add('hidden');
+        }
+      }
+    };
+
+    document.getElementById('modalCancelBtn').onclick = () => {
+      document.getElementById('confirmModal').classList.add('hidden');
+    };
+
+    // Quick Paste Email with Auto-Save
+    document.getElementById('quickPasteEmailBtn').onclick = async () => {
+      try {
+        const input = await navigator.clipboard.readText();
+        if (!input.trim()) { alert('Clipboard ว่างเปล่า'); return; }
+        const parts = input.trim().split('|');
+        if (parts.length < 2) { alert('รูปแบบต้องเป็น email|password'); return; }
+        const email = parts[0].trim();
+        const password = parts[1].trim();
+        const title = email.split('@')[0] || email;
+        const finalTitle = title;
+        const url = `${EMAIL_PREFIX}${email}${EMAIL_SEPARATOR}${password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0`;
+        const btn = document.getElementById('quickPasteEmailBtn');
+        btn.textContent = 'กำลังบันทึก...';
+        try {
+          const { error } = await sb.from('links').insert([{ title: finalTitle, url, is_pinned: false }]);
+          if (error) throw error;
+          showToast('บันทึกบัญชีแล้ว ✅');
+          loadData();
+        } catch(e) { alert('บันทึกไม่สำเร็จ: ' + e.message); }
+        finally { btn.textContent = '📋 วาง'; }
+      } catch (err) { alert('ไม่สามารถเข้าถึง Clipboard ได้'); }
+    };
+
+    // Quick Paste Board with Auto-Save
+    document.getElementById('quickPasteBoardBtn').onclick = async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (!text.trim()) { alert('Clipboard ว่างเปล่า'); return; }
+        const title = new Date().toLocaleString('th-TH');
+        const btn = document.getElementById('quickPasteBoardBtn');
+        btn.textContent = 'กำลังบันทึก...';
+        try {
+          const { error } = await sb.from('links').insert([{ title, url: text, is_pinned: false }]);
+          if (error) throw error;
+          showToast('บันทึกข้อความแล้ว ✅');
+          loadData();
+        } catch(e) { alert('บันทึกไม่สำเร็จ: ' + e.message); }
+        finally { btn.textContent = '📋 วาง'; }
+      } catch (err) { alert('ไม่สามารถเข้าถึง Clipboard ได้'); }
+    };
+
+    // Save Board Message
+    document.getElementById('saveBoardBtn').onclick = async () => {
+      const title = document.getElementById('boardTitleInput').value.trim();
+      const text = document.getElementById('boardMessageInput').value.trim();
+      const extra = document.getElementById('boardExtraInput').value.trim();
+      if (!text && !extra) { alert('กรุณาพิมพ์ข้อความก่อน'); return; }
+      let url = text;
+      if (extra) url = text + '\n|||EXTRA|||\n' + extra;
+      const btn = document.getElementById('saveBoardBtn');
+      btn.textContent = 'กำลังบันทึก...';
+      try {
+        const { error } = await sb.from('links').insert([{ title: title || '', url, is_pinned: false }]);
+        if (error) throw error;
+        document.getElementById('boardTitleInput').value = '';
+        document.getElementById('boardMessageInput').value = '';
+        document.getElementById('boardExtraInput').value = '';
+        showToast('บันทึกข้อความแล้ว ✅');
+      } catch(e) { alert('บันทึกไม่สำเร็จ: ' + e.message); }
+      finally { btn.textContent = '💾 บันทึกข้อความ'; }
+    };
+
+    // Save Email
+    document.getElementById('saveEmailBtn').onclick = async () => {
+      const title = document.getElementById('emailTitleInput').value.trim();
+      const email = document.getElementById('emailFieldInput').value.trim();
+      const password = document.getElementById('passwordFieldInput').value.trim();
+      if (!email || !password) { alert('กรุณากรอกอีเมลและรหัสผ่าน'); return; }
+      const finalTitle = title || email.split('@')[0];
+      const url = `${EMAIL_PREFIX}${email}${EMAIL_SEPARATOR}${password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0`;
+      const btn = document.getElementById('saveEmailBtn');
+      btn.textContent = 'กำลังบันทึก...';
+      try {
+        const { error } = await sb.from('links').insert([{ title: finalTitle, url, is_pinned: false }]);
+        if (error) throw error;
+        document.getElementById('emailTitleInput').value = '';
+        document.getElementById('emailFieldInput').value = '';
+        document.getElementById('passwordFieldInput').value = '';
+        showToast('บันทึกบัญชีแล้ว ✅');
+      } catch(e) { alert('บันทึกไม่สำเร็จ: ' + e.message); }
+      finally { btn.textContent = '💾 บันทึกบัญชี'; }
+    };
+
+    // Filter Listeners
+    document.getElementById('filterPendingCheckbox').onchange = () => renderEmails(currentEmailsList);
+    document.getElementById('searchEmailInput').oninput = () => renderEmails(currentEmailsList);
+    document.getElementById('searchBoardInput').oninput = () => {
+      const searchTerm = document.getElementById('searchBoardInput').value.toLowerCase();
+      const filtered = allMessagesList.filter(msg =>
+        (msg.title || '').toLowerCase().includes(searchTerm) ||
+        (msg.text || '').toLowerCase().includes(searchTerm)
+      );
+      boardDisplayCount = 10;
+      renderMessages(filtered);
+    };
+    document.getElementById('clearFilterBtn').onclick = () => {
+      document.getElementById('searchEmailInput').value = '';
+      document.getElementById('filterPendingCheckbox').checked = false;
+      renderEmails(currentEmailsList);
+    };
+
+    // Load More Buttons
+    function updateLoadMoreButtons() {
+      const emailContainer = document.getElementById('email-container');
+      const boardContainer = document.getElementById('board-container');
+      
+      // Remove existing load more buttons
+      document.querySelectorAll('.load-more-btn').forEach(btn => btn.remove());
+      
+      // Email load more
+      if (currentEmailsList.length > emailDisplayCount) {
+        const emailLoadMoreBtn = document.createElement('button');
+        emailLoadMoreBtn.className = 'load-more-btn btn-base btn-secondary col-span-1 md:col-span-2 py-3 mt-4';
+        emailLoadMoreBtn.textContent = '📥 ดูเพิ่มเติม (ทีละ 5 รายการ)';
+        emailLoadMoreBtn.onclick = () => {
+          emailDisplayCount += 5;
+          renderEmails(currentEmailsList);
+        };
+        emailContainer.parentElement.appendChild(emailLoadMoreBtn);
+      }
+      
+      // Board load more
+      if (currentMessagesList.length > boardDisplayCount) {
+        const boardLoadMoreBtn = document.createElement('button');
+        boardLoadMoreBtn.className = 'load-more-btn btn-base btn-secondary col-span-1 md:col-span-2 py-3 mt-4';
+        boardLoadMoreBtn.textContent = '📥 ดูเพิ่มเติม (ทีละ 5 รายการ)';
+        boardLoadMoreBtn.onclick = () => {
+          boardDisplayCount += 5;
+          renderMessages(currentMessagesList);
+        };
+        boardContainer.parentElement.appendChild(boardLoadMoreBtn);
+      }
+    }
+
+    // =============================================
+    // --- EDIT MODAL ---
+    // =============================================
+    function openEditModal(id, currentTitle, currentText, isEmail = false, emailVal = '', passVal = '', currentStatus = '0', extraText = '', packageReceived = false, confirmReceived = false) {
+      messageIdToEdit = id;
+      isEditingEmailMode = isEmail;
+      document.getElementById('editTitleInput').value = currentTitle || '';
+
+      if (isEmail) {
+        document.getElementById('editMessageContainer').classList.add('hidden');
+        document.getElementById('editEmailContainer').classList.remove('hidden');
+        document.getElementById('editEmailField').value = emailVal || '';
+        document.getElementById('editPasswordField').value = passVal || '';
+        
+        document.querySelectorAll('input[name="edit-email-status"]').forEach(r => {
+          r.checked = (r.value === currentStatus);
+        });
+
+        const pkgCb = document.getElementById('edit-package-checkbox');
+        const confCb = document.getElementById('edit-confirm-checkbox');
+        pkgCb.checked = !!packageReceived;
+        confCb.checked = !!confirmReceived;
+        document.getElementById('edit-package-label').classList.toggle('checked-package', !!packageReceived);
+        document.getElementById('edit-confirm-label').classList.toggle('checked-confirm', !!confirmReceived);
+      } else {
+        document.getElementById('editMessageContainer').classList.remove('hidden');
+        document.getElementById('editEmailContainer').classList.add('hidden');
+        document.getElementById('editMessageInput').value = currentText || '';
+        document.getElementById('editExtraMessageInput').value = extraText || '';
+      }
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    document.getElementById('editCancelBtn').onclick = () => {
+      document.getElementById('editModal').classList.add('hidden');
+      messageIdToEdit = null;
+    };
+
+    document.getElementById('editSaveBtn').onclick = async () => {
+      if (!messageIdToEdit) return;
+      const newTitle = document.getElementById('editTitleInput').value;
+      let newUrl = '';
+
+      if (isEditingEmailMode) {
+        const e = document.getElementById('editEmailField').value.trim();
+        const p = document.getElementById('editPasswordField').value.trim();
+        const statusRadio = document.querySelector('input[name="edit-email-status"]:checked');
+        const s = statusRadio ? statusRadio.value : '0';
+        const pkg = document.getElementById('edit-package-checkbox').checked ? '1' : '0';
+        const conf = document.getElementById('edit-confirm-checkbox').checked ? '1' : '0';
+        if (!e || !p) { alert('กรุณากรอกข้อมูลให้ครบ'); return; }
+        newUrl = `${EMAIL_PREFIX}${e}${EMAIL_SEPARATOR}${p}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${s}${EMAIL_SEPARATOR}${pkg}${EMAIL_SEPARATOR}${conf}`;
+      } else {
+        const t = document.getElementById('editMessageInput').value;
+        const xt = document.getElementById('editExtraMessageInput').value;
+        if (!t.trim() && !xt.trim()) { alert('กรุณาใส่ข้อความหรือลิ้งค์'); return; }
+        newUrl = t;
+        if (xt && xt.trim()) newUrl = t + '\n|||EXTRA|||\n' + xt.trim();
+      }
+
+      const btn = document.getElementById('editSaveBtn');
+      const originalText = btn.textContent;
+      btn.textContent = 'กำลังบันทึก...';
+      try {
+        const { error } = await sb.from('links').update({ title: newTitle, url: newUrl }).eq('id', messageIdToEdit);
+        if (error) throw error;
+        showToast('แก้ไขเรียบร้อย ✅');
+        document.getElementById('editModal').classList.add('hidden');
+        messageIdToEdit = null;
+        loadData();
+      } catch (error) {
+        alert('บันทึกไม่สำเร็จ: ' + error.message);
+      } finally {
+        btn.textContent = originalText;
+      }
+    };
+
+    // Checkbox toggle in edit modal
+    document.getElementById('edit-package-label').addEventListener('click', () => {
+      const cb = document.getElementById('edit-package-checkbox');
+      const label = document.getElementById('edit-package-label');
+      setTimeout(() => { label.classList.toggle('checked-package', cb.checked); }, 0);
+    });
+    document.getElementById('edit-confirm-label').addEventListener('click', () => {
+      const cb = document.getElementById('edit-confirm-checkbox');
+      const label = document.getElementById('edit-confirm-label');
+      setTimeout(() => { label.classList.toggle('checked-confirm', cb.checked); }, 0);
+    });
+
+    // =============================================
+    // --- INIT ---
+    // =============================================
+    initAddressSystem();
+    loadData();
+    
+    // Realtime
+    sb.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, loadData).subscribe();
+
+  </script>
+</body>
+</html>
