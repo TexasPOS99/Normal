@@ -1076,9 +1076,20 @@
           showToast('Clipboard ว่างเปล่า 📋'); 
           return; 
         }
+        
+        // จัดระเบียบข้อความ: ลบบรรทัดว่างที่ซ้ำซ้อน และรักษาตัวอักษรให้ครบถ้วน
+        // 1. แยกบรรทัด
+        // 2. ตัดช่องว่างหัวท้ายแต่ละบรรทัด
+        // 3. กรองเอาเฉพาะบรรทัดที่มีข้อความ
+        // 4. รวมกลับด้วยการขึ้นบรรทัดใหม่เพียง 1 บรรทัด
+        const cleanedText = text.split('\n')
+                                .map(line => line.trim())
+                                .filter(line => line.length > 0)
+                                .join('\n');
+
         // วางข้อมูลลงในช่อง "ลิ้งค์ หรือ โค้ดเพิ่มเติม" (ช่องล่างสุด)
-        document.getElementById('boardExtraInput').value = text;
-        showToast('วางข้อมูลในช่องเพิ่มเติมแล้ว ✨');
+        document.getElementById('boardExtraInput').value = cleanedText;
+        showToast('วางและจัดระเบียบข้อความแล้ว ✨');
       } catch (err) { 
         alert('ไม่สามารถเข้าถึง Clipboard ได้'); 
       }
