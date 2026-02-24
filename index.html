@@ -1072,17 +1072,16 @@
     document.getElementById('quickPasteBoardBtn').onclick = async () => {
       try {
         const text = await navigator.clipboard.readText();
-        if (!text.trim()) { alert('Clipboard ว่างเปล่า'); return; }
-        const title = new Date().toLocaleString('th-TH');
-        const btn = document.getElementById('quickPasteBoardBtn');
-        btn.textContent = 'กำลังบันทึก...';
-        try {
-          const { error } = await sb.from('links').insert([{ title, url: text, is_pinned: false }]);
-          if (error) throw error;
-          showToast('บันทึกข้อความแล้ว ✅');
-        } catch(e) { alert('บันทึกไม่สำเร็จ: ' + e.message); }
-        finally { btn.textContent = '📋 วางด่วน'; }
-      } catch (err) { alert('ไม่สามารถเข้าถึง Clipboard ได้'); }
+        if (!text.trim()) { 
+          showToast('Clipboard ว่างเปล่า 📋'); 
+          return; 
+        }
+        // วางข้อมูลลงในช่อง "ลิ้งค์ หรือ โค้ดเพิ่มเติม" (ช่องล่างสุด)
+        document.getElementById('boardExtraInput').value = text;
+        showToast('วางข้อมูลในช่องเพิ่มเติมแล้ว ✨');
+      } catch (err) { 
+        alert('ไม่สามารถเข้าถึง Clipboard ได้'); 
+      }
     };
 
     document.getElementById('saveBoardBtn').onclick = async () => {
