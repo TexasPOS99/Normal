@@ -444,14 +444,32 @@
 
         <div class="card-premium">
             <div class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <input id="searchEmailInput" type="text" class="input-premium" placeholder="🔍 ค้นหาอีเมล หรือ ชื่อเรียก..." />
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <input id="searchEmailInput" type="text" class="input-premium" placeholder="🔍 ค้นหาอีเมล..." />
+                    
+                    <div class="flex items-center gap-2 bg-bg-input px-3 py-2 rounded-xl border border-border focus-within:border-accent transition-all">
+                        <span class="text-xs text-hint font-heading whitespace-nowrap">🌙 เดือน:</span>
+                        <select id="searchMonthSelect" class="bg-transparent border-none text-sm font-heading outline-none w-full cursor-pointer">
+                            <option value="0">มกราคม</option>
+                            <option value="1">กุมภาพันธ์</option>
+                            <option value="2">มีนาคม</option>
+                            <option value="3">เมษายน</option>
+                            <option value="4">พฤษภาคม</option>
+                            <option value="5">มิถุนายน</option>
+                            <option value="6">กรกฎาคม</option>
+                            <option value="7">สิงหาคม</option>
+                            <option value="8">กันยายน</option>
+                            <option value="9">ตุลาคม</option>
+                            <option value="10">พฤศจิกายน</option>
+                            <option value="11">ธันวาคม</option>
+                        </select>
+                    </div>
+
                     <div class="flex flex-col gap-1">
                         <div class="flex items-center gap-2 bg-bg-input px-3 py-2 rounded-xl border border-border focus-within:border-accent transition-all">
                             <span class="text-xs text-hint font-heading whitespace-nowrap">📅 วันที่:</span>
-                            <input id="searchDateInput" type="text" class="bg-transparent border-none text-sm font-heading outline-none w-full" placeholder="ระบุวันที่ (เช่น 20 หรือ 20-24)" />
+                            <input id="searchDateInput" type="text" class="bg-transparent border-none text-sm font-heading outline-none w-full" placeholder="เช่น 20 หรือ 20-24" />
                         </div>
-                        <p class="text-[10px] text-hint px-1">ค้นหาตามวันที่สร้าง (เช่น 15 หรือ 1-10)</p>
                     </div>
                 </div>
                 
@@ -993,16 +1011,19 @@
       const filterPending = document.getElementById('filterPendingCheckbox').checked;
       const searchTerm = document.getElementById('searchEmailInput').value.toLowerCase();
       const dateSearch = document.getElementById('searchDateInput').value.trim();
+      const selectedMonth = parseInt(document.getElementById('searchMonthSelect').value);
       
       const filtered = emails.filter(mail => {
+        const createdDate = new Date(mail.created_at);
         const matchesSearch = mail.title.toLowerCase().includes(searchTerm) || mail.email.toLowerCase().includes(searchTerm);
         const matchesPending = filterPending ? (mail.packageReceived && !mail.confirmReceived) : true;
         
+        // กรองตามเดือนที่เลือก
+        const matchesMonth = createdDate.getMonth() === selectedMonth;
+
         let matchesDate = true;
         if (dateSearch) {
-          const createdDate = new Date(mail.created_at);
           const day = createdDate.getDate();
-          
           if (dateSearch.includes('-')) {
             const [start, end] = dateSearch.split('-').map(s => parseInt(s.trim()));
             if (!isNaN(start) && !isNaN(end)) {
@@ -1016,7 +1037,7 @@
           }
         }
         
-        return matchesSearch && matchesPending && matchesDate;
+        return matchesSearch && matchesPending && matchesMonth && matchesDate;
       });
 
       if (filtered.length === 0) {
@@ -1196,6 +1217,14 @@
       emailDisplayCount = 10;
       loadData();
     };
+    document.getElementById('searchMonthSelect').onchange = () => {
+      emailDisplayCount = 10;
+      loadData();
+    };
+    
+    // ตั้งค่าเดือนปัจจุบันเป็นค่าเริ่มต้น
+    document.getElementById('searchMonthSelect').value = new Date().getMonth();
+
     document.getElementById('searchBoardInput').oninput = () => {
       const searchTerm = document.getElementById('searchBoardInput').value.toLowerCase();
       const filtered = allMessagesList.filter(msg => (msg.title || '').toLowerCase().includes(searchTerm) || (msg.text || '').toLowerCase().includes(searchTerm));
@@ -1206,6 +1235,7 @@
       document.getElementById('searchEmailInput').value = '';
       document.getElementById('searchBoardInput').value = '';
       document.getElementById('searchDateInput').value = '';
+      document.getElementById('searchMonthSelect').value = new Date().getMonth();
       document.getElementById('filterPendingCheckbox').checked = false;
       emailDisplayCount = 10;
       boardDisplayCount = 10;
