@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>All-in-One Tools — Modern Redesign</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
@@ -95,14 +95,22 @@
       color: var(--primary);
     }
 
-    /* Confirm Clear Modal */
-    #clearConfirmModal .modal-content {
-      background-color: #ffffff;
-    }
-
-    /* Delete Address Modal */
-    #deleteAddressModal .modal-content {
-      background-color: #ffffff;
+    /* Mobile optimization for buttons and inputs */
+    @media (max-width: 640px) {
+      .btn-base {
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+      }
+      .input-premium, .textarea-premium {
+        font-size: 1rem; /* Prevent zoom on iOS */
+      }
+      .card-premium {
+        padding: 1rem;
+      }
+      .tab-item {
+        padding: 0.75rem 0.25rem;
+        font-size: 0.8rem;
+      }
     }
   </style>
 </head>
@@ -123,7 +131,7 @@
     </div>
   </div>
 
-  <!-- Confirm Clear Input Modal (ล้างค่า ส่วนข้อมูลต้นฉบับ) -->
+  <!-- Confirm Clear Input Modal -->
   <div id="clearConfirmModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden modal-backdrop">
     <div class="modal-content rounded-3xl p-8 max-w-sm w-full mx-4 text-center">
       <div class="mb-4 text-amber-500 text-5xl">🗑️</div>
@@ -242,34 +250,34 @@
     </div>
   </div>
 
-  <div class="max-w-6xl mx-auto px-4 py-10">
-    <header class="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
+  <div class="max-w-6xl mx-auto px-4 py-6 md:py-10">
+    <header class="flex flex-col md:flex-row justify-between items-center mb-8 md:12 gap-6">
       <div class="flex items-center gap-4">
-        <div class="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-          <span class="text-white text-3xl">🛠️</span>
+        <div class="w-12 h-12 md:w-14 md:h-14 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
+          <span class="text-white text-2xl md:text-3xl">🛠️</span>
         </div>
         <div>
-          <h2 class="text-2xl font-heading text-slate-900">All-in-One Tools</h2>
-          <p class="text-hint text-sm">Modern & Fast Productivity Suite</p>
+          <h2 class="text-xl md:text-2xl font-heading text-slate-900">All-in-One Tools</h2>
+          <p class="text-hint text-xs md:text-sm">Modern & Fast Productivity Suite</p>
         </div>
       </div>
       
-      <nav class="flex bg-bg-card p-1.5 rounded-2xl border border-border shadow-sm">
-        <button class="nav-btn active" data-tab="camouflage">🎭 พรางข้อความ</button>
-        <button class="nav-btn" data-tab="board">💬 บอร์ด</button>
-        <button class="nav-btn" data-tab="email">📧 อีเมล</button>
+      <nav class="tab-container w-full md:w-auto">
+        <div class="tab-item active" data-tab="camouflage">🎭 พรางข้อความ</div>
+        <div class="tab-item" data-tab="board">💬 บอร์ด</div>
+        <div class="tab-item" data-tab="email">📧 อีเมล</div>
       </nav>
     </header>
 
     <main>
       <!-- Camouflage Tab -->
-      <section id="camouflage-tab" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <section id="camouflage-tab" class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
         <div class="card-premium">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="font-heading text-lg flex items-center gap-2">📝 ข้อมูลต้นฉบับ</h3>
                 <div class="flex gap-2">
-                    <button class="btn-base btn-secondary py-2 text-xs" id="btnPaste">📋 วาง</button>
-                    <button class="btn-base btn-secondary py-2 text-xs" id="btnClear">🗑️ ล้าง</button>
+                    <button class="btn-base btn-secondary py-2 px-3 text-xs w-auto" id="btnPaste">📋 วาง</button>
+                    <button class="btn-base btn-secondary py-2 px-3 text-xs w-auto" id="btnClear">🗑️ ล้าง</button>
                 </div>
             </div>
             <textarea id="inputArea" class="textarea-premium mb-4" placeholder="กรอก หรือ วางข้อความที่นี่ (เช่น 82/7 หมู่ 4)..."></textarea>
@@ -374,8 +382,8 @@
 
       <!-- Board Tab -->
       <section id="board-tab" class="hidden">
-        <div class="text-center mb-10">
-          <h1 class="text-4xl font-heading mb-2">💬 บอร์ดข้อความ</h1>
+        <div class="text-center mb-8 md:mb-10">
+          <h1 class="text-3xl md:text-4xl font-heading mb-2">💬 บอร์ดข้อความ</h1>
           <p class="text-hint">พื้นที่สำหรับจดบันทึกและจัดการข้อความสำคัญ</p>
         </div>
 
@@ -383,9 +391,9 @@
             <div class="space-y-4">
                 <input id="boardTitleInput" type="text" class="input-premium" placeholder="หัวข้อข้อความ..." />
                 <textarea id="boardMessageInput" rows="3" class="input-premium" placeholder="พิมพ์ข้อความที่นี่..."></textarea>
-                <div class="flex gap-3">
+                <div class="flex flex-col sm:flex-row gap-3">
                     <textarea id="boardExtraInput" rows="2" class="input-premium flex-1" placeholder="ลิ้งค์ หรือ โค้ดเพิ่มเติม (ถ้ามี)..."></textarea>
-                    <button id="quickPasteBoardBtn" class="btn-base btn-primary py-2 text-xs" style="white-space: nowrap; height: fit-content;">📋 วาง</button>
+                    <button id="quickPasteBoardBtn" class="btn-base btn-primary py-3 sm:py-2 text-sm sm:w-auto" style="white-space: nowrap; height: fit-content;">📋 วางด่วน</button>
                 </div>
                 <button id="saveBoardBtn" class="btn-base btn-primary">💾 บันทึกข้อความ</button>
             </div>
@@ -402,17 +410,17 @@
 
       <!-- Email Tab -->
       <section id="email-tab" class="hidden">
-        <div class="text-center mb-10">
-          <h1 class="text-4xl font-heading mb-2">📧 จัดการอีเมล</h1>
+        <div class="text-center mb-8 md:mb-10">
+          <h1 class="text-3xl md:text-4xl font-heading mb-2">📧 จัดการอีเมล</h1>
           <p class="text-hint">ระบบจัดการบัญชีอีเมลและสถานะการจัดส่ง</p>
         </div>
 
         <div class="card-premium" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%); border: 1px solid rgba(34, 197, 94, 0.3);">
             <div class="space-y-3">
                 <label class="block text-hint font-heading">🚀 วางด่วน (email|password)</label>
-                <div class="flex gap-3">
+                <div class="flex flex-col sm:flex-row gap-3">
                     <textarea id="quickPasteEmailInput" rows="2" class="input-premium flex-1" placeholder="วางข้อมูล เช่น user@email.com|password123..."></textarea>
-                    <button id="quickPasteEmailBtn" class="btn-base btn-primary py-2 text-xs" style="white-space: nowrap; height: fit-content;">📋 วาง</button>
+                    <button id="quickPasteEmailBtn" class="btn-base btn-primary py-3 sm:py-2 text-sm sm:w-auto" style="white-space: nowrap; height: fit-content;">📋 วางด่วน</button>
                 </div>
             </div>
         </div>
@@ -437,11 +445,8 @@
                         <input type="checkbox" id="filterPendingCheckbox" class="w-5 h-5 accent-accent">
                         <span>📦 ได้รับเลขแล้ว แต่ยังไม่ยืนยัน 🤝</span>
                     </label>
-                    <div class="flex items-center gap-2 ml-auto">
-                        <input type="date" id="startDateInput" class="input-premium py-2 text-xs w-auto" />
-                        <span class="text-muted">-</span>
-                        <input type="date" id="endDateInput" class="input-premium py-2 text-xs w-auto" />
-                        <button id="clearFilterBtn" class="btn-base btn-secondary py-2 px-4 text-xs w-auto">ล้างค่า</button>
+                    <div class="flex items-center gap-2 ml-auto w-full sm:w-auto">
+                        <button id="clearFilterBtn" class="btn-base btn-secondary py-2 px-4 text-xs w-full sm:w-auto">ล้างการค้นหา</button>
                     </div>
                 </div>
             </div>
@@ -453,8 +458,8 @@
       </section>
     </main>
 
-    <footer class="mt-20 pb-10 text-center">
-        <p class="text-hint font-heading">Website Design by <span class="text-accent">FB: nickname rittipon</span></p>
+    <footer class="mt-12 md:mt-20 pb-10 text-center">
+        <p class="text-hint font-heading text-xs md:text-sm">Website Design by <span class="text-accent">FB: nickname rittipon</span></p>
     </footer>
   </div>
 
@@ -541,9 +546,9 @@
     // =============================================
     // --- TAB NAVIGATION ---
     // =============================================
-    document.querySelectorAll('.nav-btn').forEach(btn => {
+    document.querySelectorAll('.tab-item').forEach(btn => {
       btn.onclick = () => {
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const tab = btn.dataset.tab;
         ['camouflage', 'board', 'email'].forEach(t => {
@@ -598,7 +603,6 @@
         btn.disabled = true;
 
         try {
-          // Store address in 'url' field with ADDR_PREFIX
           const url = `${ADDR_PREFIX}${type}${EMAIL_SEPARATOR}${address}`;
           const { error } = await sb.from('links').insert([{ title: name, url, is_pinned: false }]);
           if (error) throw error;
@@ -606,7 +610,6 @@
           document.getElementById('newAddressName').value = '';
           document.getElementById('newAddressFull').value = '';
           showToast('บันทึกที่อยู่ใหม่แล้ว ✅');
-          // loadData will be called by realtime subscription
         } catch(e) { 
           alert('บันทึกไม่สำเร็จ: ' + e.message); 
         } finally {
@@ -683,7 +686,6 @@
       document.getElementById('btnClearNewAddress').onclick = () => {
         document.getElementById('newAddressName').value = '';
         document.getElementById('newAddressFull').value = '';
-        // Reset type selection
         document.querySelectorAll('.addr-type-label').forEach(l => l.classList.remove('selected'));
         document.getElementById('typePersonalLabel').classList.add('selected');
         document.getElementById('typePersonalRadio').checked = true;
@@ -702,7 +704,6 @@
       addressListContainer.innerHTML = '';
 
       addresses.forEach((item) => {
-        // Add to Select dropdown
         const opt = document.createElement('option');
         opt.value = item.address;
         opt.textContent = item.name;
@@ -712,7 +713,6 @@
           groupPersonal.appendChild(opt);
         }
         
-        // Add to List display
         const div = document.createElement('div');
         div.className = "flex items-center justify-between p-3 bg-bg-input rounded-xl border border-border";
         div.innerHTML = `
@@ -797,7 +797,6 @@
         const numInvisible = parseInt(document.getElementById('numInvisible').value) || 5;
         const numSpace = parseInt(document.getElementById('numSpace').value) || 2;
 
-        // Generate 3 variations
         const results = [];
         for (let v = 0; v < 3; v++) {
           let text = inputText;
@@ -807,7 +806,6 @@
           results.push(text);
         }
 
-        // Show result modal
         const resultList = document.getElementById('resultList');
         resultList.innerHTML = '';
         results.forEach((res, idx) => {
@@ -831,7 +829,6 @@
       document.getElementById('closeResultBtn').addEventListener('click', () => {
         document.getElementById('resultModal').classList.add('hidden');
       });
-      // Close modal on backdrop click
       document.getElementById('resultModal').addEventListener('click', (e) => {
         if (e.target === document.getElementById('resultModal')) {
           document.getElementById('resultModal').classList.add('hidden');
@@ -896,18 +893,12 @@
       renderAddressList(addresses);
     }
 
-    // Helper functions for code/URL detection
     function isLikelyUrl(str) {
       if (str.includes(' ')) return false;
       if (/^https?:\/\//i.test(str)) return true;
       if (/^www\./i.test(str)) return true;
       if (/^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}(\/.*)?$/.test(str)) return true;
       return false;
-    }
-    
-    function ensureHttp(str) {
-      if (/^https?:\/\//i.test(str)) return str;
-      return 'https://' + str;
     }
     
     function renderExtraContent(extra) {
@@ -935,11 +926,7 @@
         container.innerHTML = '<p class="text-center text-hint col-span-2 py-8">ยังไม่มีข้อความ</p>';
         return;
       }
-      
-      // Store for pagination
       currentMessagesList = messages;
-      
-      // Display only first boardDisplayCount items
       const displayMessages = messages.slice(0, boardDisplayCount);
       displayMessages.forEach(msg => {
         const div = document.createElement('div');
@@ -959,13 +946,10 @@
             <button class="btn-base btn-secondary py-2 text-xs pin-btn">${msg.isPinned ? '📍 เลิกปัก' : '📌 ปักหมุด'}</button>
           </div>
         `;
-        
         div.querySelector('.copy-btn').onclick = (e) => copyTextToClipboard(msg.text, e.target);
         div.querySelector('.pin-btn').onclick = () => togglePin(msg.id, msg.isPinned);
         div.querySelector('.del-btn').onclick = () => { messageIdToDelete = msg.id; document.getElementById('confirmModal').classList.remove('hidden'); };
         div.querySelector('.edit-btn').onclick = () => openEditModal(msg.id, msg.title, msg.text, false, '', '', '0', msg.extra);
-        
-        // Add copy button listeners for extra content
         const copyBtns = div.querySelectorAll('.btn-copy-extra');
         copyBtns.forEach(btn => {
           btn.onclick = (e) => {
@@ -973,36 +957,26 @@
             copyTextToClipboard(code, btn);
           };
         });
-        
         container.appendChild(div);
       });
-      
-      // Update load more buttons
       updateLoadMoreButtons();
     }
 
     function renderEmails(emails) {
       const container = document.getElementById('email-container');
       container.innerHTML = '';
-      
       const filterPending = document.getElementById('filterPendingCheckbox').checked;
       const searchTerm = document.getElementById('searchEmailInput').value.toLowerCase();
-      
       const filtered = emails.filter(mail => {
         const matchesSearch = mail.title.toLowerCase().includes(searchTerm) || mail.email.toLowerCase().includes(searchTerm);
         const matchesPending = filterPending ? (mail.packageReceived && !mail.confirmReceived) : true;
         return matchesSearch && matchesPending;
       });
-
       if (filtered.length === 0) {
         container.innerHTML = '<p class="text-center text-hint col-span-2 py-8">ไม่พบข้อมูลอีเมล</p>';
         return;
       }
-
-      // Store for pagination
       currentEmailsList = filtered;
-      
-      // Display only first emailDisplayCount items
       const displayEmails = filtered.slice(0, emailDisplayCount);
       displayEmails.forEach(mail => {
         const div = document.createElement('div');
@@ -1039,54 +1013,41 @@
             </button>
           </div>
         `;
-
         div.querySelector('.copy-email-btn').onclick = (e) => copyTextToClipboard(mail.email, e.target);
         div.querySelector('.copy-pass-btn').onclick = (e) => copyTextToClipboard(mail.password, e.target);
         div.querySelector('.del-btn').onclick = () => { messageIdToDelete = mail.id; document.getElementById('confirmModal').classList.remove('hidden'); };
         div.querySelector('.edit-btn').onclick = () => openEditModal(mail.id, mail.title, '', true, mail.email, mail.password, mail.status, '', mail.packageReceived, mail.confirmReceived);
-        
         const passText = div.querySelector('.pass-text');
         div.querySelector('.toggle-pass').onclick = (e) => {
           const isHidden = passText.textContent === '••••••••';
           passText.textContent = isHidden ? mail.password : '••••••••';
           e.target.textContent = isHidden ? '🙈' : '👁️';
         };
-
         const pkgBtn = div.querySelector('.pkg-btn');
         const confBtn = div.querySelector('.conf-btn');
-
         if (pkgBtn) pkgBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.packageReceived; try { await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}${ns ? '1' : '0'}${EMAIL_SEPARATOR}${mail.confirmReceived ? '1' : '0'}` }).eq('id', mail.id); mail.packageReceived = ns; pkgBtn.classList.toggle('checked-package', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
         if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}${mail.packageReceived ? '1' : '0'}${EMAIL_SEPARATOR}${ns ? '1' : '0'}` }).eq('id', mail.id); mail.confirmReceived = ns; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
-
         container.appendChild(div);
       });
-
       updateLoadMoreButtons();
     }
 
     async function togglePin(id, current) {
-      try {
-        await sb.from('links').update({ is_pinned: !current }).eq('id', id);
-      } catch(e) { alert('Error'); }
+      try { await sb.from('links').update({ is_pinned: !current }).eq('id', id); } catch(e) { alert('Error'); }
     }
 
-    // Modal Confirm Delete (Board/Email)
     document.getElementById('modalCancelBtn').onclick = () => {
       document.getElementById('confirmModal').classList.add('hidden');
       messageIdToDelete = null;
     };
     document.getElementById('modalConfirmBtn').onclick = async () => {
       if (messageIdToDelete) {
-        try {
-          await sb.from('links').delete().eq('id', messageIdToDelete);
-          showToast('ลบข้อมูลแล้ว 🗑️');
-        } catch(e) { alert('ลบไม่สำเร็จ'); }
+        try { await sb.from('links').delete().eq('id', messageIdToDelete); showToast('ลบข้อมูลแล้ว 🗑️'); } catch(e) { alert('ลบไม่สำเร็จ'); }
       }
       document.getElementById('confirmModal').classList.add('hidden');
       messageIdToDelete = null;
     };
 
-    // Quick Paste Email with Auto-Save
     document.getElementById('quickPasteEmailBtn').onclick = async () => {
       try {
         const input = await navigator.clipboard.readText();
@@ -1096,20 +1057,18 @@
         const email = parts[0].trim();
         const password = parts[1].trim();
         const title = email.split('@')[0] || email;
-        const finalTitle = title;
         const url = `${EMAIL_PREFIX}${email}${EMAIL_SEPARATOR}${password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0`;
         const btn = document.getElementById('quickPasteEmailBtn');
         btn.textContent = 'กำลังบันทึก...';
         try {
-          const { error } = await sb.from('links').insert([{ title: finalTitle, url, is_pinned: false }]);
+          const { error } = await sb.from('links').insert([{ title, url, is_pinned: false }]);
           if (error) throw error;
           showToast('บันทึกบัญชีแล้ว ✅');
         } catch(e) { alert('บันทึกไม่สำเร็จ: ' + e.message); }
-        finally { btn.textContent = '📋 วาง'; }
+        finally { btn.textContent = '📋 วางด่วน'; }
       } catch (err) { alert('ไม่สามารถเข้าถึง Clipboard ได้'); }
     };
 
-    // Quick Paste Board with Auto-Save
     document.getElementById('quickPasteBoardBtn').onclick = async () => {
       try {
         const text = await navigator.clipboard.readText();
@@ -1122,11 +1081,10 @@
           if (error) throw error;
           showToast('บันทึกข้อความแล้ว ✅');
         } catch(e) { alert('บันทึกไม่สำเร็จ: ' + e.message); }
-        finally { btn.textContent = '📋 วาง'; }
+        finally { btn.textContent = '📋 วางด่วน'; }
       } catch (err) { alert('ไม่สามารถเข้าถึง Clipboard ได้'); }
     };
 
-    // Save Board Message
     document.getElementById('saveBoardBtn').onclick = async () => {
       const title = document.getElementById('boardTitleInput').value.trim();
       const text = document.getElementById('boardMessageInput').value.trim();
@@ -1147,7 +1105,6 @@
       finally { btn.textContent = '💾 บันทึกข้อความ'; }
     };
 
-    // Save Email
     document.getElementById('saveEmailBtn').onclick = async () => {
       const title = document.getElementById('emailTitleInput').value.trim();
       const email = document.getElementById('emailFieldInput').value.trim();
@@ -1168,75 +1125,52 @@
       finally { btn.textContent = '💾 บันทึกบัญชี'; }
     };
 
-    // Filter Listeners
     document.getElementById('filterPendingCheckbox').onchange = () => renderEmails(currentEmailsList);
     document.getElementById('searchEmailInput').oninput = () => renderEmails(currentEmailsList);
     document.getElementById('searchBoardInput').oninput = () => {
       const searchTerm = document.getElementById('searchBoardInput').value.toLowerCase();
-      const filtered = allMessagesList.filter(msg =>
-        (msg.title || '').toLowerCase().includes(searchTerm) ||
-        (msg.text || '').toLowerCase().includes(searchTerm)
-      );
+      const filtered = allMessagesList.filter(msg => (msg.title || '').toLowerCase().includes(searchTerm) || (msg.text || '').toLowerCase().includes(searchTerm));
       boardDisplayCount = 10;
       renderMessages(filtered);
     };
     document.getElementById('clearFilterBtn').onclick = () => {
       document.getElementById('searchEmailInput').value = '';
+      document.getElementById('searchBoardInput').value = '';
       document.getElementById('filterPendingCheckbox').checked = false;
       renderEmails(currentEmailsList);
+      renderMessages(allMessagesList);
     };
 
-    // Load More Buttons
     function updateLoadMoreButtons() {
       const emailContainer = document.getElementById('email-container');
       const boardContainer = document.getElementById('board-container');
-      
-      // Remove existing load more buttons
       document.querySelectorAll('.load-more-btn').forEach(btn => btn.remove());
-      
-      // Email load more
       if (currentEmailsList.length > emailDisplayCount) {
-        const emailLoadMoreBtn = document.createElement('button');
-        emailLoadMoreBtn.className = 'load-more-btn btn-base btn-secondary col-span-1 md:col-span-2 py-3 mt-4';
-        emailLoadMoreBtn.textContent = '📥 ดูเพิ่มเติม (ทีละ 5 รายการ)';
-        emailLoadMoreBtn.onclick = () => {
-          emailDisplayCount += 5;
-          renderEmails(currentEmailsList);
-        };
-        emailContainer.parentElement.appendChild(emailLoadMoreBtn);
+        const btn = document.createElement('button');
+        btn.className = 'load-more-btn btn-base btn-secondary col-span-1 md:col-span-2 py-3 mt-4';
+        btn.textContent = '📥 ดูเพิ่มเติม';
+        btn.onclick = () => { emailDisplayCount += 5; renderEmails(currentEmailsList); };
+        emailContainer.parentElement.appendChild(btn);
       }
-      
-      // Board load more
       if (currentMessagesList.length > boardDisplayCount) {
-        const boardLoadMoreBtn = document.createElement('button');
-        boardLoadMoreBtn.className = 'load-more-btn btn-base btn-secondary col-span-1 md:col-span-2 py-3 mt-4';
-        boardLoadMoreBtn.textContent = '📥 ดูเพิ่มเติม (ทีละ 5 รายการ)';
-        boardLoadMoreBtn.onclick = () => {
-          boardDisplayCount += 5;
-          renderMessages(currentMessagesList);
-        };
-        boardContainer.parentElement.appendChild(boardLoadMoreBtn);
+        const btn = document.createElement('button');
+        btn.className = 'load-more-btn btn-base btn-secondary col-span-1 md:col-span-2 py-3 mt-4';
+        btn.textContent = '📥 ดูเพิ่มเติม';
+        btn.onclick = () => { boardDisplayCount += 5; renderMessages(currentMessagesList); };
+        boardContainer.parentElement.appendChild(btn);
       }
     }
 
-    // =============================================
-    // --- EDIT MODAL ---
-    // =============================================
     function openEditModal(id, currentTitle, currentText, isEmail = false, emailVal = '', passVal = '', currentStatus = '0', extraText = '', packageReceived = false, confirmReceived = false) {
       messageIdToEdit = id;
       isEditingEmailMode = isEmail;
       document.getElementById('editTitleInput').value = currentTitle || '';
-
       if (isEmail) {
         document.getElementById('editMessageContainer').classList.add('hidden');
         document.getElementById('editEmailContainer').classList.remove('hidden');
         document.getElementById('editEmailField').value = emailVal || '';
         document.getElementById('editPasswordField').value = passVal || '';
-        
-        document.querySelectorAll('input[name="edit-email-status"]').forEach(r => {
-          r.checked = (r.value === currentStatus);
-        });
-
+        document.querySelectorAll('input[name="edit-email-status"]').forEach(r => { r.checked = (r.value === currentStatus); });
         const pkgCb = document.getElementById('edit-package-checkbox');
         const confCb = document.getElementById('edit-confirm-checkbox');
         pkgCb.checked = !!packageReceived;
@@ -1261,7 +1195,6 @@
       if (!messageIdToEdit) return;
       const newTitle = document.getElementById('editTitleInput').value;
       let newUrl = '';
-
       if (isEditingEmailMode) {
         const e = document.getElementById('editEmailField').value.trim();
         const p = document.getElementById('editPasswordField').value.trim();
@@ -1278,7 +1211,6 @@
         newUrl = t;
         if (xt && xt.trim()) newUrl = t + '\n|||EXTRA|||\n' + xt.trim();
       }
-
       const btn = document.getElementById('editSaveBtn');
       const originalText = btn.textContent;
       btn.textContent = 'กำลังบันทึก...';
@@ -1288,14 +1220,10 @@
         showToast('แก้ไขเรียบร้อย ✅');
         document.getElementById('editModal').classList.add('hidden');
         messageIdToEdit = null;
-      } catch (error) {
-        alert('บันทึกไม่สำเร็จ: ' + error.message);
-      } finally {
-        btn.textContent = originalText;
-      }
+      } catch (error) { alert('บันทึกไม่สำเร็จ: ' + error.message); }
+      finally { btn.textContent = originalText; }
     };
 
-    // Checkbox toggle in edit modal
     document.getElementById('edit-package-label').addEventListener('click', () => {
       const cb = document.getElementById('edit-package-checkbox');
       const label = document.getElementById('edit-package-label');
@@ -1312,8 +1240,6 @@
     // =============================================
     initAddressSystem();
     loadData();
-    
-    // Realtime
     sb.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, loadData).subscribe();
 
   </script>
