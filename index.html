@@ -732,8 +732,11 @@
       const groupCustomer = document.getElementById('group-customer');
       const addressListContainer = document.getElementById('addressListContainer');
 
-      groupPersonal.innerHTML = '';
-      groupCustomer.innerHTML = '';
+      // เก็บค่าที่เลือกไว้ก่อนหน้า (ถ้ามี)
+      const currentSelected = select.value;
+
+      groupPersonal.innerHTML = '<option value="">-- เลือกที่อยู่ส่วนตัว --</option>';
+      groupCustomer.innerHTML = '<option value="">-- เลือกที่อยู่ลูกค้า --</option>';
       addressListContainer.innerHTML = '';
 
       addresses.forEach((item) => {
@@ -750,7 +753,7 @@
         div.className = "flex items-center justify-between p-3 bg-bg-input rounded-xl border border-border";
         div.innerHTML = `
           <div class="flex flex-col flex-1 min-w-0 mr-2">
-            <span class="font-heading text-sm">${escapeHTML(item.name)} ${item.type === 'personal' ? '🏠' : '👥'}</span>
+            <span class="font-heading text-sm">${escapeHTML(item.name || 'ไม่มีชื่อ')} ${item.type === 'personal' ? '🏠' : '👥'}</span>
             <span class="text-[10px] text-hint truncate">${escapeHTML(item.address)}</span>
           </div>
           <button class="del-addr-btn flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-rose-50 transition-colors" data-id="${item.id}" data-name="${escapeHTML(item.name)}" title="ลบที่อยู่นี้">
@@ -778,6 +781,9 @@
         emptyDiv.textContent = "ยังไม่มีที่อยู่ที่บันทึกไว้";
         addressListContainer.appendChild(emptyDiv);
       }
+
+      // คืนค่าที่เลือกไว้
+      if (currentSelected) select.value = currentSelected;
     }
 
     // =============================================
@@ -903,6 +909,7 @@
           const parts = content.split(EMAIL_SEPARATOR);
           item.type = parts[0] || 'personal';
           item.address = parts[1] || '';
+          item.name = item.title; // ใช้ title จากฐานข้อมูลเป็นชื่อเรียก
           addresses.push(item);
         } else {
           if (item.rawUrl.includes('\n|||EXTRA|||\n')) {
@@ -1157,9 +1164,14 @@
                                 .filter(line => line.length > 0)
                                 .join('\n');
 
-        // วางข้อมูลลงในช่อง "ลิ้งค์ หรือ โค้ดเพิ่มเติม" (ช่องล่างสุด)
-        document.getElementById('boardExtraInput').value = cleanedText;
-        showToast('วางและจัดระเบียบข้อความแล้ว ✨');
+        // วางข้อมูลลงในช่อง "ลิ้งค์ หรือ โค้ดเพิ่มเติม" (ช่องล่างสุด) - เปลี่ยนเป็นแบบต่อท้าย (Append)
+        const currentVal = document.getElementById('boardExtraInput').value.trim();
+        if (currentVal) {
+          document.getElementById('boardExtraInput').value = currentVal + '\n' + cleanedText;
+        } else {
+          document.getElementById('boardExtraInput').value = cleanedText;
+        }
+        showToast('วางและต่อท้ายข้อความแล้ว ✨');
       } catch (err) { 
         alert('ไม่สามารถเข้าถึง Clipboard ได้'); 
       }
