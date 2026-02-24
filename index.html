@@ -926,8 +926,18 @@
         container.innerHTML = '<p class="text-center text-hint col-span-2 py-8">ยังไม่มีข้อความ</p>';
         return;
       }
-      currentMessagesList = messages;
-      const displayMessages = messages.slice(0, boardDisplayCount);
+
+      // เรียงลำดับ: ปักหมุดขึ้นก่อน (Pinned First) 
+      // ถ้าสถานะปักหมุดเหมือนกัน ให้เรียงตามเวลาล่าสุด (Newest First)
+      const sortedMessages = [...messages].sort((a, b) => {
+        if (a.isPinned === b.isPinned) {
+          return new Date(b.created_at) - new Date(a.created_at);
+        }
+        return a.isPinned ? -1 : 1;
+      });
+
+      currentMessagesList = sortedMessages;
+      const displayMessages = sortedMessages.slice(0, boardDisplayCount);
       displayMessages.forEach(msg => {
         const div = document.createElement('div');
         div.className = `card-premium ${msg.isPinned ? 'pinned-message' : ''}`;
