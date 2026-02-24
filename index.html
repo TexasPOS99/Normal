@@ -224,30 +224,54 @@
     </div>
   </div>
 
-  <div class="container mx-auto max-w-4xl p-4 sm:p-6">
+  <!-- Result Modal -->
+  <div id="resultModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden modal-backdrop">
+    <div class="modal-content rounded-3xl p-8 max-w-2xl w-full mx-4">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-2xl font-heading" style="color: #0f172a;">✨ ข้อความพรางของคุณ</h3>
+        <button id="closeResultBtn" class="text-hint hover:text-primary text-2xl">✕</button>
+      </div>
+      
+      <div id="resultList" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+        <!-- Results will be here -->
+      </div>
 
-    <nav class="tab-container">
-      <div id="btn-address-tab" class="tab-item active">🔐 สร้างที่อยู่ลับ</div>
-      <div id="btn-board-tab" class="tab-item">💬 บอร์ดข้อความ</div>
-      <div id="btn-email-tab" class="tab-item">📧 จัดการอีเมล</div>
-    </nav>
+      <div class="mt-8 pt-6 border-t border-border flex justify-center">
+        <button class="btn-base btn-secondary w-auto px-8" onclick="document.getElementById('resultModal').classList.add('hidden')">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto px-4 py-10">
+    <header class="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
+          <span class="text-white text-3xl">🛠️</span>
+        </div>
+        <div>
+          <h2 class="text-2xl font-heading text-slate-900">All-in-One Tools</h2>
+          <p class="text-hint text-sm">Modern & Fast Productivity Suite</p>
+        </div>
+      </div>
+      
+      <nav class="flex bg-bg-card p-1.5 rounded-2xl border border-border shadow-sm">
+        <button class="nav-btn active" data-tab="camouflage">🎭 พรางข้อความ</button>
+        <button class="nav-btn" data-tab="board">💬 บอร์ด</button>
+        <button class="nav-btn" data-tab="email">📧 อีเมล</button>
+      </nav>
+    </header>
 
     <main>
-      <!-- Address Tab -->
-      <section id="address-tab">
-        <div class="text-center mb-10">
-          <h1 class="text-4xl font-heading mb-2">🔐 โปรแกรมสร้างที่อยู่ลับ</h1>
-          <p class="text-hint">เครื่องมือสร้างที่อยู่และเบอร์โทรศัพท์แบบสุ่มและพรางตัว</p>
-        </div>
-
+      <!-- Camouflage Tab -->
+      <section id="camouflage-tab" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div class="card-premium">
-            <h3 class="font-heading text-lg mb-4 flex items-center gap-2">✨ ข้อมูลต้นฉบับ</h3>
-            
-            <div class="flex gap-3 mb-4">
-                <button class="btn-base btn-primary" id="btnPaste">📋 วางข้อมูล</button>
-                <button class="btn-base btn-secondary" id="btnClear">🗑️ ล้างค่า</button>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-heading text-lg flex items-center gap-2">📝 ข้อมูลต้นฉบับ</h3>
+                <div class="flex gap-2">
+                    <button class="btn-base btn-secondary py-2 text-xs" id="btnPaste">📋 วาง</button>
+                    <button class="btn-base btn-secondary py-2 text-xs" id="btnClear">🗑️ ล้าง</button>
+                </div>
             </div>
-
             <textarea id="inputArea" class="textarea-premium mb-4" placeholder="กรอก หรือ วางข้อความที่นี่ (เช่น 82/7 หมู่ 4)..."></textarea>
             
             <div class="space-y-3">
@@ -434,68 +458,11 @@
     </footer>
   </div>
 
-  <!-- Result Modal -->
-  <div id="resultModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden modal-backdrop">
-    <div class="modal-content rounded-3xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-2xl font-heading" style="color: #0f172a;">✨ ข้อความพรางที่สร้างเสร็จแล้ว</h3>
-            <button id="closeResultBtn" class="text-2xl hover:text-rose-500 transition-colors" style="color: #94a3b8;">✕</button>
-        </div>
-        
-        <div id="resultList" class="space-y-6">
-            <!-- Results will be here -->
-        </div>
-    </div>
-  </div>
-
   <script>
-    // --- TAB SYSTEM ---
-    const tabs = {
-      'btn-address-tab': 'address-tab',
-      'btn-board-tab': 'board-tab',
-      'btn-email-tab': 'email-tab'
-    };
-
-    Object.keys(tabs).forEach(tabId => {
-      document.getElementById(tabId).addEventListener('click', () => {
-        document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        Object.values(tabs).forEach(sectionId => {
-          document.getElementById(sectionId).classList.add('hidden');
-        });
-        document.getElementById(tabs[tabId]).classList.remove('hidden');
-      });
-    });
-
-    // --- COLLAPSIBLE ---
-    const toggleAddAddress = document.getElementById('toggleAddAddress');
-    const addAddressContent = document.getElementById('addAddressContent');
-    const collapseIcon = document.getElementById('collapseIcon');
-
-    toggleAddAddress.addEventListener('click', () => {
-      const isHidden = addAddressContent.classList.contains('hidden');
-      if (isHidden) {
-        addAddressContent.classList.remove('hidden');
-        collapseIcon.style.transform = 'rotate(180deg)';
-      } else {
-        addAddressContent.classList.add('hidden');
-        collapseIcon.style.transform = 'rotate(0deg)';
-      }
-    });
-
-    // --- ADDRESS TYPE RADIO (JS-controlled) ---
-    const typeLabels = document.querySelectorAll('.addr-type-label');
-    typeLabels.forEach(label => {
-      label.addEventListener('click', () => {
-        typeLabels.forEach(l => l.classList.remove('selected'));
-        label.classList.add('selected');
-        const radio = label.querySelector('input[type="radio"]');
-        if (radio) radio.checked = true;
-      });
-    });
-
+    // =============================================
     // --- MATRIX BACKGROUND ---
-    (() => {
+    // =============================================
+    (function() {
       const canvas = document.getElementById('matrixCanvas');
       const ctx = canvas.getContext('2d');
       canvas.width = window.innerWidth;
@@ -526,6 +493,7 @@
     const SUPABASE_URL = "https://uromhoezcxkhilxchxxe.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVyb21ob2V6Y3hraGlseGNoeHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjEyOTUsImV4cCI6MjA2ODY5NzI5NX0.UDABYee8_JDlZHkKGzz6bQG0v95H86uLAP6WIN75Y7o";
     const EMAIL_PREFIX = "vault://";
+    const ADDR_PREFIX = "addr://";
     const EMAIL_SEPARATOR = "|::|";
 
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -537,7 +505,7 @@
     let messageIdToDelete = null;
     let messageIdToEdit = null;
     let isEditingEmailMode = false;
-    let addressIndexToDelete = null;
+    let addressIdToDelete = null;
 
     // Toast Function
     function showToast(msg = 'คัดลอกข้อความแล้ว!') {
@@ -551,102 +519,120 @@
       }, 2000);
     }
 
-    // Copy Function
-    function copyTextToClipboard(text, button) {
-      navigator.clipboard.writeText(text).then(() => {
-        showToast();
-        if (button && button.tagName === 'BUTTON') {
-          const oldHTML = button.innerHTML;
-          button.innerHTML = '✅ สำเร็จ!';
-          setTimeout(() => { button.innerHTML = oldHTML; }, 2000);
-        }
-      }).catch(err => { console.error('Failed to copy text: ', err); });
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[m]));
     }
 
-    // Escape HTML
-    function escapeHTML(str) {
-      const p = document.createElement('p');
-      p.textContent = str;
-      return p.innerHTML;
+    async function copyTextToClipboard(text, btn) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast();
+        if (btn) {
+          const original = btn.textContent;
+          btn.textContent = '✅ คัดลอกแล้ว';
+          setTimeout(() => { btn.textContent = original; }, 1500);
+        }
+      } catch (err) { alert('ไม่สามารถคัดลอกได้'); }
     }
 
     // =============================================
-    // --- ADDRESS SYSTEM ---
+    // --- TAB NAVIGATION ---
+    // =============================================
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        ['camouflage', 'board', 'email'].forEach(t => {
+          document.getElementById(t + '-tab').classList.toggle('hidden', t !== tab);
+        });
+      };
+    });
+
+    // =============================================
+    // --- ADDRESS SYSTEM (SUPABASE) ---
     // =============================================
     function initAddressSystem() {
       const select = document.getElementById('savedAddressSelect');
-      const inputArea = document.getElementById('inputArea');
       const groupPersonal = document.getElementById('group-personal');
       const groupCustomer = document.getElementById('group-customer');
+      const inputArea = document.getElementById('inputArea');
       const addressListContainer = document.getElementById('addressListContainer');
       
-      const defaultAddresses = [
-        { name: "บ้านเนม", address: "82/7 หมู่บ้านไทยสมุทร 2 เบอโทร 0951698770 ลาดกระบัง 16 ราชาเทวะ สมุทรปราการ 10540", type: "personal" },
-        { name: "บ้านแน้ค", address: "123/45 หมู่ 6 ต.บางรัก อ.เมือง จ.นนทบุรี 11000", type: "personal" },
-        { name: "บ้านมินท์", address: "99/1 ซอยสุขุมวิท 101 แขวงบางจาก เขตพระโขนง กรุงเทพฯ 10260", type: "personal" },
-        { name: "บ้านเฟิร์ส", address: "55/88 หมู่บ้านกรีนวิลล์ ถ.พุทธมณฑลสาย 2 แขวงศาลาธรรมสพน์ เขตทวีวัฒนา กรุงเทพฯ 10170", type: "personal" }
-      ];
+      const toggleAddAddress = document.getElementById('toggleAddAddress');
+      const addAddressContent = document.getElementById('addAddressContent');
+      const collapseIcon = document.getElementById('collapseIcon');
 
-      function updateDisplay() {
-        groupPersonal.innerHTML = '';
-        groupCustomer.innerHTML = '';
-        addressListContainer.innerHTML = '';
-        
-        // Initialize localStorage with default addresses if first time
-        if (!localStorage.getItem('address_initialized_v2')) {
-          localStorage.setItem('user_saved_addresses_v2', JSON.stringify(defaultAddresses));
-          localStorage.setItem('address_initialized_v2', 'true');
-        }
-        
-        const all = JSON.parse(localStorage.getItem('user_saved_addresses_v2') || '[]');
-        
-        all.forEach((item, index) => {
-          // Add to Select dropdown
-          const opt = document.createElement('option');
-          opt.value = item.address;
-          opt.textContent = item.name;
-          if (item.type === 'customer') {
-            groupCustomer.appendChild(opt);
-          } else {
-            groupPersonal.appendChild(opt);
-          }
-          
-          // Add to List display
-          const div = document.createElement('div');
-          div.className = "flex items-center justify-between p-3 bg-bg-input rounded-xl border border-border";
-          div.innerHTML = `
-            <div class="flex flex-col flex-1 min-w-0 mr-2">
-              <span class="font-heading text-sm">${escapeHTML(item.name)} ${item.type === 'personal' ? '🏠' : '👥'}</span>
-              <span class="text-[10px] text-hint truncate">${escapeHTML(item.address)}</span>
-            </div>
-            <button class="del-addr-btn flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-rose-50 transition-colors" data-index="${index}" data-name="${escapeHTML(item.name)}" title="ลบที่อยู่นี้">
-              <span class="text-rose-400 hover:text-rose-600 text-base">🗑️</span>
-            </button>
-          `;
-          
-          const delBtn = div.querySelector('.del-addr-btn');
-          if (delBtn) {
-            delBtn.addEventListener('click', () => {
-              const idx = parseInt(delBtn.dataset.index);
-              const name = delBtn.dataset.name;
-              // Show delete confirm modal
-              document.getElementById('deleteAddressName').textContent = `"${name}"`;
-              addressIndexToDelete = idx;
-              document.getElementById('deleteAddressModal').classList.remove('hidden');
-            });
-          }
-          
-          addressListContainer.appendChild(div);
-        });
+      toggleAddAddress.onclick = () => {
+        const isHidden = addAddressContent.classList.contains('hidden');
+        addAddressContent.classList.toggle('hidden');
+        collapseIcon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+      };
 
-        // Show empty state if no addresses
-        if (all.length === 0) {
-          const emptyDiv = document.createElement('div');
-          emptyDiv.className = "text-center py-4 text-hint text-sm";
-          emptyDiv.textContent = "ยังไม่มีที่อยู่ที่บันทึกไว้";
-          addressListContainer.appendChild(emptyDiv);
+      // Address Type Selection
+      document.querySelectorAll('.addr-type-label').forEach(label => {
+        label.onclick = () => {
+          document.querySelectorAll('.addr-type-label').forEach(l => l.classList.remove('selected'));
+          label.classList.add('selected');
+          label.querySelector('input').checked = true;
+        };
+      });
+
+      // Save new address to Supabase
+      document.getElementById('btnSaveNewAddress').onclick = async () => {
+        const name = document.getElementById('newAddressName').value.trim();
+        const address = document.getElementById('newAddressFull').value.trim();
+        const checkedRadio = document.querySelector('input[name="addressType"]:checked');
+        const type = checkedRadio ? checkedRadio.value : 'personal';
+        
+        if (!name || !address) {
+          alert('กรุณากรอกชื่อเรียกและที่อยู่ให้ครบถ้วน');
+          return;
         }
-      }
+
+        const btn = document.getElementById('btnSaveNewAddress');
+        btn.textContent = 'กำลังบันทึก...';
+        btn.disabled = true;
+
+        try {
+          // Store address in 'url' field with ADDR_PREFIX
+          const url = `${ADDR_PREFIX}${type}${EMAIL_SEPARATOR}${address}`;
+          const { error } = await sb.from('links').insert([{ title: name, url, is_pinned: false }]);
+          if (error) throw error;
+          
+          document.getElementById('newAddressName').value = '';
+          document.getElementById('newAddressFull').value = '';
+          showToast('บันทึกที่อยู่ใหม่แล้ว ✅');
+          // loadData will be called by realtime subscription
+        } catch(e) { 
+          alert('บันทึกไม่สำเร็จ: ' + e.message); 
+        } finally {
+          btn.textContent = '💾 บันทึกที่อยู่';
+          btn.disabled = false;
+        }
+      };
+
+      // Delete Address Modal handlers
+      document.getElementById('deleteAddressCancelBtn').onclick = () => {
+        document.getElementById('deleteAddressModal').classList.add('hidden');
+        addressIdToDelete = null;
+      };
+      document.getElementById('deleteAddressConfirmBtn').onclick = async () => {
+        if (addressIdToDelete !== null) {
+          try {
+            const { error } = await sb.from('links').delete().eq('id', addressIdToDelete);
+            if (error) throw error;
+            showToast('ลบที่อยู่แล้ว 🗑️');
+          } catch(e) {
+            alert('ลบไม่สำเร็จ: ' + e.message);
+          }
+        }
+        document.getElementById('deleteAddressModal').classList.add('hidden');
+        addressIdToDelete = null;
+      };
 
       // Select address → fill input
       select.addEventListener('change', (e) => {
@@ -703,77 +689,84 @@
         document.getElementById('typePersonalRadio').checked = true;
         showToast('ล้างข้อมูลแล้ว');
       };
+    }
 
-      // Save new address
-      document.getElementById('btnSaveNewAddress').onclick = () => {
-        const name = document.getElementById('newAddressName').value.trim();
-        const address = document.getElementById('newAddressFull').value.trim();
-        const checkedRadio = document.querySelector('input[name="addressType"]:checked');
-        const type = checkedRadio ? checkedRadio.value : 'personal';
-        
-        if (!name || !address) {
-          alert('กรุณากรอกชื่อเรียกและที่อยู่ให้ครบถ้วน');
-          return;
+    function renderAddressList(addresses) {
+      const select = document.getElementById('savedAddressSelect');
+      const groupPersonal = document.getElementById('group-personal');
+      const groupCustomer = document.getElementById('group-customer');
+      const addressListContainer = document.getElementById('addressListContainer');
+
+      groupPersonal.innerHTML = '';
+      groupCustomer.innerHTML = '';
+      addressListContainer.innerHTML = '';
+
+      addresses.forEach((item) => {
+        // Add to Select dropdown
+        const opt = document.createElement('option');
+        opt.value = item.address;
+        opt.textContent = item.name;
+        if (item.type === 'customer') {
+          groupCustomer.appendChild(opt);
+        } else {
+          groupPersonal.appendChild(opt);
         }
         
-        const current = JSON.parse(localStorage.getItem('user_saved_addresses_v2') || '[]');
-        current.push({ name, address, type, isDefault: false });
-        localStorage.setItem('user_saved_addresses_v2', JSON.stringify(current));
+        // Add to List display
+        const div = document.createElement('div');
+        div.className = "flex items-center justify-between p-3 bg-bg-input rounded-xl border border-border";
+        div.innerHTML = `
+          <div class="flex flex-col flex-1 min-w-0 mr-2">
+            <span class="font-heading text-sm">${escapeHTML(item.name)} ${item.type === 'personal' ? '🏠' : '👥'}</span>
+            <span class="text-[10px] text-hint truncate">${escapeHTML(item.address)}</span>
+          </div>
+          <button class="del-addr-btn flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-rose-50 transition-colors" data-id="${item.id}" data-name="${escapeHTML(item.name)}" title="ลบที่อยู่นี้">
+            <span class="text-rose-400 hover:text-rose-600 text-base">🗑️</span>
+          </button>
+        `;
         
-        document.getElementById('newAddressName').value = '';
-        document.getElementById('newAddressFull').value = '';
-        updateDisplay();
-        showToast('บันทึกที่อยู่ใหม่แล้ว ✅');
-      };
-
-      // Delete Address Modal handlers
-      document.getElementById('deleteAddressCancelBtn').onclick = () => {
-        document.getElementById('deleteAddressModal').classList.add('hidden');
-        addressIndexToDelete = null;
-      };
-      document.getElementById('deleteAddressConfirmBtn').onclick = () => {
-        if (addressIndexToDelete !== null) {
-          const current = JSON.parse(localStorage.getItem('user_saved_addresses_v2') || '[]');
-          current.splice(addressIndexToDelete, 1);
-          localStorage.setItem('user_saved_addresses_v2', JSON.stringify(current));
-          updateDisplay();
-          showToast('ลบที่อยู่แล้ว 🗑️');
+        const delBtn = div.querySelector('.del-addr-btn');
+        if (delBtn) {
+          delBtn.addEventListener('click', () => {
+            const id = delBtn.dataset.id;
+            const name = delBtn.dataset.name;
+            document.getElementById('deleteAddressName').textContent = `"${name}"`;
+            addressIdToDelete = id;
+            document.getElementById('deleteAddressModal').classList.remove('hidden');
+          });
         }
-        document.getElementById('deleteAddressModal').classList.add('hidden');
-        addressIndexToDelete = null;
-      };
+        
+        addressListContainer.appendChild(div);
+      });
 
-      updateDisplay();
+      if (addresses.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = "text-center py-4 text-hint text-sm";
+        emptyDiv.textContent = "ยังไม่มีที่อยู่ที่บันทึกไว้";
+        addressListContainer.appendChild(emptyDiv);
+      }
     }
 
     // =============================================
     // --- GENERATE CAMOUFLAGE TEXT ---
     // =============================================
-    (() => {
-      // Thai vowels and tone marks for fake injection
-      const fakeVowels = ['ั', 'า', 'ิ', 'ี', 'ึ', 'ื', 'ุ', 'ู', 'เ', 'แ', 'โ', 'ใ', 'ไ'];
-      const fakeTones = ['่', '้', '๊', '๋'];
-      const invisibleChars = ['\u200B', '\u200C', '\u200D', '\uFEFF', '\u2060'];
-      const extraSpaces = ['\u00A0', '\u2002', '\u2003', '\u2009'];
+    (function() {
+      const fakeChars = ["\u0E31", "\u0E34", "\u0E35", "\u0E36", "\u0E37", "\u0E38", "\u0E39", "\u0E47", "\u0E48", "\u0E49", "\u0E4A", "\u0E4B", "\u0E4C", "\u0E4D", "\u0E4E"];
+      const invisibleChars = ["\u200B", "\u200C", "\u200D", "\uFEFF"];
 
-      function insertFakeChars(text, numFake) {
-        if (!text || numFake <= 0) return text;
-        const chars = text.split('');
-        const allFake = [...fakeVowels, ...fakeTones];
-        let inserted = 0;
-        while (inserted < numFake) {
+      function insertFakeChars(text, count) {
+        let chars = text.split('');
+        for (let i = 0; i < count; i++) {
           const pos = Math.floor(Math.random() * chars.length);
-          const fake = allFake[Math.floor(Math.random() * allFake.length)];
+          const fake = fakeChars[Math.floor(Math.random() * fakeChars.length)];
           chars.splice(pos, 0, fake);
-          inserted++;
         }
         return chars.join('');
       }
 
-      function insertInvisibleChars(text, numInvisible) {
-        if (!text || numInvisible <= 0) return text;
-        const chars = text.split('');
-        for (let i = 0; i < numInvisible; i++) {
+      function insertInvisibleChars(text, count) {
+        let chars = text.split('');
+        for (let i = 0; i < count; i++) {
           const pos = Math.floor(Math.random() * chars.length);
           const inv = invisibleChars[Math.floor(Math.random() * invisibleChars.length)];
           chars.splice(pos, 0, inv);
@@ -781,22 +774,19 @@
         return chars.join('');
       }
 
-      function insertExtraSpaces(text, numSpace) {
-        if (!text || numSpace <= 0) return text;
-        const words = text.split(' ');
-        if (words.length < 2) return text;
-        for (let i = 0; i < numSpace; i++) {
-          const pos = Math.floor(Math.random() * (words.length - 1)) + 1;
-          const sp = extraSpaces[Math.floor(Math.random() * extraSpaces.length)];
-          words[pos] = sp + words[pos];
+      function insertExtraSpaces(text, count) {
+        let chars = text.split('');
+        for (let i = 0; i < count; i++) {
+          const pos = Math.floor(Math.random() * chars.length);
+          chars.splice(pos, 0, ' ');
         }
-        return words.join(' ');
+        return chars.join('');
       }
 
       function generateCamouflage() {
         const inputText = document.getElementById('inputArea').value.trim();
         if (!inputText) {
-          alert('กรุณากรอกหรือวางข้อมูลที่อยู่ก่อน');
+          showToast('กรุณากรอกข้อความก่อน ✨');
           return;
         }
 
@@ -858,6 +848,7 @@
 
       const emails = [];
       const messages = [];
+      const addresses = [];
 
       data.forEach(row => {
         const item = {
@@ -877,6 +868,12 @@
           item.packageReceived = parts[4] === '1';
           item.confirmReceived = parts[5] === '1';
           emails.push(item);
+        } else if (item.rawUrl.startsWith(ADDR_PREFIX)) {
+          const content = item.rawUrl.replace(ADDR_PREFIX, '');
+          const parts = content.split(EMAIL_SEPARATOR);
+          item.type = parts[0] || 'personal';
+          item.address = parts[1] || '';
+          addresses.push(item);
         } else {
           if (item.rawUrl.includes('\n|||EXTRA|||\n')) {
             const parts = item.rawUrl.split('\n|||EXTRA|||\n');
@@ -896,6 +893,7 @@
       boardDisplayCount = 10;
       renderMessages(messages);
       renderEmails(emails);
+      renderAddressList(addresses);
     }
 
     // Helper functions for code/URL detection
@@ -1029,70 +1027,63 @@
             </div>
           </div>
           <div class="flex gap-2 mb-4">
-            <button class="checkbox-icon pkg-icon ${mail.packageReceived ? 'checked-package' : ''} text-[10px] py-1 px-2 cursor-pointer transition-all" style="border: none; background: inherit; padding: 8px 14px; border-radius: 10px;">📦 ได้รับเลข</button>
-            <button class="checkbox-icon conf-icon ${mail.confirmReceived ? 'checked-confirm' : ''} text-[10px] py-1 px-2 cursor-pointer transition-all" style="border: none; background: inherit; padding: 8px 14px; border-radius: 10px;">🤝 ยืนยันแล้ว</button>
+            <button class="btn-base btn-secondary py-2 text-xs copy-email-btn">📧 เมล</button>
+            <button class="btn-base btn-secondary py-2 text-xs copy-pass-btn">🔑 รหัส</button>
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <button class="btn-base btn-primary py-2 text-xs copy-email">📋 เมล</button>
-            <button class="btn-base btn-secondary py-2 text-xs copy-pass">🔑 รหัส</button>
+          <div class="flex flex-wrap gap-2 pt-4 border-t border-border/50">
+            <button class="checkbox-icon pkg-btn ${mail.packageReceived ? 'checked-package' : ''}">
+              <span>📦 เลขพัสดุ</span>
+            </button>
+            <button class="checkbox-icon conf-btn ${mail.confirmReceived ? 'checked-confirm' : ''}">
+              <span>🤝 ยืนยัน</span>
+            </button>
           </div>
         `;
 
-        div.querySelector('.toggle-pass').onclick = (e) => {
-          const passEl = div.querySelector('.pass-text');
-          if (passEl.textContent === '••••••••') {
-            passEl.textContent = mail.password;
-            e.target.textContent = '🙈';
-          } else {
-            passEl.textContent = '••••••••';
-            e.target.textContent = '👁️';
-          }
-        };
-
-        div.querySelector('.copy-email').onclick = (e) => copyTextToClipboard(mail.email, e.target);
-        div.querySelector('.copy-pass').onclick = (e) => copyTextToClipboard(mail.password, e.target);
+        div.querySelector('.copy-email-btn').onclick = (e) => copyTextToClipboard(mail.email, e.target);
+        div.querySelector('.copy-pass-btn').onclick = (e) => copyTextToClipboard(mail.password, e.target);
         div.querySelector('.del-btn').onclick = () => { messageIdToDelete = mail.id; document.getElementById('confirmModal').classList.remove('hidden'); };
         div.querySelector('.edit-btn').onclick = () => openEditModal(mail.id, mail.title, '', true, mail.email, mail.password, mail.status, '', mail.packageReceived, mail.confirmReceived);
         
-        const pkgBtn = div.querySelector('.pkg-icon');
-        const confBtn = div.querySelector('.conf-icon');
-        if (pkgBtn) pkgBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.packageReceived; try { await sb.from('links').update({ package_received: ns }).eq('id', mail.id); mail.packageReceived = ns; pkgBtn.classList.toggle('checked-package', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
-        if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { await sb.from('links').update({ confirm_received: ns }).eq('id', mail.id); mail.confirmReceived = ns; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
-        
+        const passText = div.querySelector('.pass-text');
+        div.querySelector('.toggle-pass').onclick = (e) => {
+          const isHidden = passText.textContent === '••••••••';
+          passText.textContent = isHidden ? mail.password : '••••••••';
+          e.target.textContent = isHidden ? '🙈' : '👁️';
+        };
+
+        const pkgBtn = div.querySelector('.pkg-btn');
+        const confBtn = div.querySelector('.conf-btn');
+
+        if (pkgBtn) pkgBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.packageReceived; try { await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}${ns ? '1' : '0'}${EMAIL_SEPARATOR}${mail.confirmReceived ? '1' : '0'}` }).eq('id', mail.id); mail.packageReceived = ns; pkgBtn.classList.toggle('checked-package', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
+        if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}${mail.packageReceived ? '1' : '0'}${EMAIL_SEPARATOR}${ns ? '1' : '0'}` }).eq('id', mail.id); mail.confirmReceived = ns; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
+
         container.appendChild(div);
       });
-      
-      // Update load more buttons
+
       updateLoadMoreButtons();
     }
 
-    // =============================================
-    // --- ACTIONS ---
-    // =============================================
     async function togglePin(id, current) {
-      await sb.from('links').update({ is_pinned: !current }).eq('id', id);
-      loadData();
+      try {
+        await sb.from('links').update({ is_pinned: !current }).eq('id', id);
+      } catch(e) { alert('Error'); }
     }
 
+    // Modal Confirm Delete (Board/Email)
+    document.getElementById('modalCancelBtn').onclick = () => {
+      document.getElementById('confirmModal').classList.add('hidden');
+      messageIdToDelete = null;
+    };
     document.getElementById('modalConfirmBtn').onclick = async () => {
       if (messageIdToDelete) {
-        const btn = document.getElementById('modalConfirmBtn');
-        btn.textContent = 'กำลังลบ...';
         try {
           await sb.from('links').delete().eq('id', messageIdToDelete);
           showToast('ลบข้อมูลแล้ว 🗑️');
-          loadData();
-        } catch(e) { alert('เกิดข้อผิดพลาด: ' + e.message); }
-        finally {
-          btn.textContent = 'ยืนยันลบ';
-          messageIdToDelete = null;
-          document.getElementById('confirmModal').classList.add('hidden');
-        }
+        } catch(e) { alert('ลบไม่สำเร็จ'); }
       }
-    };
-
-    document.getElementById('modalCancelBtn').onclick = () => {
       document.getElementById('confirmModal').classList.add('hidden');
+      messageIdToDelete = null;
     };
 
     // Quick Paste Email with Auto-Save
@@ -1113,7 +1104,6 @@
           const { error } = await sb.from('links').insert([{ title: finalTitle, url, is_pinned: false }]);
           if (error) throw error;
           showToast('บันทึกบัญชีแล้ว ✅');
-          loadData();
         } catch(e) { alert('บันทึกไม่สำเร็จ: ' + e.message); }
         finally { btn.textContent = '📋 วาง'; }
       } catch (err) { alert('ไม่สามารถเข้าถึง Clipboard ได้'); }
@@ -1131,7 +1121,6 @@
           const { error } = await sb.from('links').insert([{ title, url: text, is_pinned: false }]);
           if (error) throw error;
           showToast('บันทึกข้อความแล้ว ✅');
-          loadData();
         } catch(e) { alert('บันทึกไม่สำเร็จ: ' + e.message); }
         finally { btn.textContent = '📋 วาง'; }
       } catch (err) { alert('ไม่สามารถเข้าถึง Clipboard ได้'); }
@@ -1299,7 +1288,6 @@
         showToast('แก้ไขเรียบร้อย ✅');
         document.getElementById('editModal').classList.add('hidden');
         messageIdToEdit = null;
-        loadData();
       } catch (error) {
         alert('บันทึกไม่สำเร็จ: ' + error.message);
       } finally {
