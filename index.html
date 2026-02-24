@@ -223,6 +223,26 @@
                 </div>
              </div>
         </div>
+
+        <div id="editAddressContainer" class="hidden space-y-4">
+            <div>
+                <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">ประเภทที่อยู่</label>
+                <div class="flex gap-3 mt-1">
+                    <label class="edit-addr-type-label cursor-pointer flex-1 text-center py-2 rounded-xl border border-border font-heading text-sm transition-all">
+                        <input type="radio" name="editAddressType" value="personal" class="hidden">
+                        <span>🏠 ส่วนตัว</span>
+                    </label>
+                    <label class="edit-addr-type-label cursor-pointer flex-1 text-center py-2 rounded-xl border border-border font-heading text-sm transition-all">
+                        <input type="radio" name="editAddressType" value="customer" class="hidden">
+                        <span>👥 ของลูกค้า</span>
+                    </label>
+                </div>
+            </div>
+            <div>
+                <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">ที่อยู่เต็ม</label>
+                <textarea id="editAddressFull" rows="3" class="input-premium" placeholder="ระบุที่อยู่เต็ม..."></textarea>
+            </div>
+        </div>
       </div>
 
       <div class="flex gap-3 justify-end mt-8">
@@ -341,8 +361,8 @@
                 <button class="btn-base btn-primary" id="btnSaveNewAddress">💾 บันทึกที่อยู่</button>
                 
                 <div class="mt-6">
-                    <label class="block text-hint font-heading mb-3">รายการที่บันทึกไว้</label>
-                    <div id="addressListContainer" class="space-y-2">
+                    <label class="block text-hint font-heading mb-3">🗂️ คลังที่อยู่บันทึกไว้</label>
+                    <div id="addressListContainer" class="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                         <!-- Address items will be here -->
                     </div>
                 </div>
@@ -794,12 +814,10 @@
     }
 
     function renderAddressList(addresses) {
-      allAddresses = addresses; // อัปเดตข้อมูลทั้งหมดเพื่อใช้ค้นหา
       const addressListContainer = document.getElementById('addressListContainer');
       addressListContainer.innerHTML = '';
 
       addresses.forEach((item) => {
-        
         const div = document.createElement('div');
         div.className = "flex items-center justify-between p-3 bg-bg-input rounded-xl border border-border";
         div.innerHTML = `
@@ -807,11 +825,41 @@
             <span class="font-heading text-sm">${escapeHTML(item.name || 'ไม่มีชื่อ')} ${item.type === 'personal' ? '🏠' : '👥'}</span>
             <span class="text-[10px] text-hint truncate">${escapeHTML(item.address)}</span>
           </div>
-          <button class="del-addr-btn flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-rose-50 transition-colors" data-id="${item.id}" data-name="${escapeHTML(item.name)}" title="ลบที่อยู่นี้">
-            <span class="text-rose-400 hover:text-rose-600 text-base">🗑️</span>
-          </button>
+          <div class="flex gap-1">
+            <button class="edit-addr-btn flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 transition-colors" data-id="${item.id}" title="แก้ไขที่อยู่นี้">
+              <span class="text-blue-400 hover:text-blue-600 text-base">✏️</span>
+            </button>
+            <button class="del-addr-btn flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-rose-50 transition-colors" data-id="${item.id}" data-name="${escapeHTML(item.name)}" title="ลบที่อยู่นี้">
+              <span class="text-rose-400 hover:text-rose-600 text-base">🗑️</span>
+            </button>
+          </div>
         `;
         
+        const editBtn = div.querySelector('.edit-addr-btn');
+        if (editBtn) {
+          editBtn.addEventListener('click', () => {
+            const addr = allAddresses.find(a => a.id == item.id);
+            if (addr) {
+              messageIdToEdit = addr.id;
+              isEditingEmailMode = false;
+              document.getElementById('editTitleInput').value = addr.name;
+              document.getElementById('editEmailContainer').classList.add('hidden');
+              document.getElementById('editBoardContainer').classList.add('hidden');
+              document.getElementById('editAddressContainer').classList.remove('hidden');
+              
+              document.getElementById('editAddressFull').value = addr.address;
+              const typeRadio = document.querySelector(`input[name="editAddressType"][value="${addr.type}"]`);
+              if (typeRadio) {
+                typeRadio.checked = true;
+                document.querySelectorAll('.edit-addr-type-label').forEach(l => l.classList.remove('selected'));
+                typeRadio.closest('.edit-addr-type-label').classList.add('selected');
+              }
+              
+              document.getElementById('editModal').classList.remove('hidden');
+            }
+          });
+        }
+
         const delBtn = div.querySelector('.del-addr-btn');
         if (delBtn) {
           delBtn.addEventListener('click', () => {
@@ -927,7 +975,7 @@
     // --- REALTIME & DATA LOADING ---
     // =============================================
     async function loadData() {
-      const { data, error } = await sb.from('links').select('*').order('created_at', { ascending: false });
+      const { data, error } = await sb.from('links').select('*').order('created_at', { ascending: true });
       if (error) return;
 
       const emails = [];
@@ -1358,7 +1406,16 @@
       if (!messageIdToEdit) return;
       const newTitle = document.getElementById('editTitleInput').value;
       let newUrl = '';
-      if (isEditingEmailMode) {
+      
+      const isAddressMode = !document.getElementById('editAddressContainer').classList.contains('hidden');
+
+      if (isAddressMode) {
+        const address = document.getElementById('editAddressFull').value.trim();
+        const checkedRadio = document.querySelector('input[name="editAddressType"]:checked');
+        const type = checkedRadio ? checkedRadio.value : 'personal';
+        if (!newTitle || !address) { alert('กรุณากรอกข้อมูลให้ครบ'); return; }
+        newUrl = `${ADDR_PREFIX}${type}${EMAIL_SEPARATOR}${address}`;
+      } else if (isEditingEmailMode) {
         const e = document.getElementById('editEmailField').value.trim();
         const p = document.getElementById('editPasswordField').value.trim();
         const statusRadio = document.querySelector('input[name="edit-email-status"]:checked');
@@ -1396,6 +1453,14 @@
       const cb = document.getElementById('edit-confirm-checkbox');
       const label = document.getElementById('edit-confirm-label');
       setTimeout(() => { label.classList.toggle('checked-confirm', cb.checked); }, 0);
+    });
+
+    document.querySelectorAll('.edit-addr-type-label').forEach(label => {
+      label.onclick = () => {
+        document.querySelectorAll('.edit-addr-type-label').forEach(l => l.classList.remove('selected'));
+        label.classList.add('selected');
+        label.querySelector('input').checked = true;
+      };
     });
 
     // =============================================
