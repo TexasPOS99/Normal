@@ -444,7 +444,16 @@
 
         <div class="card-premium">
             <div class="space-y-4">
-                <input id="searchEmailInput" type="text" class="input-premium" placeholder="🔍 ค้นหาอีเมล หรือ ชื่อเรียก..." />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <input id="searchEmailInput" type="text" class="input-premium" placeholder="🔍 ค้นหาอีเมล หรือ ชื่อเรียก..." />
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center gap-2 bg-bg-input px-3 py-2 rounded-xl border border-border focus-within:border-accent transition-all">
+                            <span class="text-xs text-hint font-heading whitespace-nowrap">📅 วันที่:</span>
+                            <input id="searchDateInput" type="text" class="bg-transparent border-none text-sm font-heading outline-none w-full" placeholder="ระบุวันที่ (เช่น 20 หรือ 20-24)" />
+                        </div>
+                        <p class="text-[10px] text-hint px-1">ค้นหาตามวันที่สร้าง (เช่น 15 หรือ 1-10)</p>
+                    </div>
+                </div>
                 
                 <div class="flex flex-wrap items-center gap-4">
                     <label class="flex items-center gap-2 cursor-pointer font-heading text-sm">
@@ -983,17 +992,41 @@
       container.innerHTML = '';
       const filterPending = document.getElementById('filterPendingCheckbox').checked;
       const searchTerm = document.getElementById('searchEmailInput').value.toLowerCase();
+      const dateSearch = document.getElementById('searchDateInput').value.trim();
+      
       const filtered = emails.filter(mail => {
         const matchesSearch = mail.title.toLowerCase().includes(searchTerm) || mail.email.toLowerCase().includes(searchTerm);
         const matchesPending = filterPending ? (mail.packageReceived && !mail.confirmReceived) : true;
-        return matchesSearch && matchesPending;
+        
+        let matchesDate = true;
+        if (dateSearch) {
+          const createdDate = new Date(mail.created_at);
+          const day = createdDate.getDate();
+          
+          if (dateSearch.includes('-')) {
+            const [start, end] = dateSearch.split('-').map(s => parseInt(s.trim()));
+            if (!isNaN(start) && !isNaN(end)) {
+              matchesDate = (day >= start && day <= end);
+            }
+          } else {
+            const targetDay = parseInt(dateSearch);
+            if (!isNaN(targetDay)) {
+              matchesDate = (day === targetDay);
+            }
+          }
+        }
+        
+        return matchesSearch && matchesPending && matchesDate;
       });
+
       if (filtered.length === 0) {
         container.innerHTML = '<p class="text-center text-hint col-span-2 py-8">ไม่พบข้อมูลอีเมล</p>';
         return;
       }
-      currentEmailsList = filtered;
-      const displayEmails = filtered.slice(0, emailDisplayCount);
+      
+      // เก็บรายการที่กรองแล้วไว้ใช้กับ Load More
+      const allFiltered = filtered;
+      const displayEmails = allFiltered.slice(0, emailDisplayCount);
       displayEmails.forEach(mail => {
         const div = document.createElement('div');
         let statusClass = mail.status === '2' ? 'email-status-good' : (mail.status === '1' ? 'email-status-warning' : 'email-status-expired');
@@ -1151,8 +1184,18 @@
       finally { btn.textContent = '💾 บันทึกบัญชี'; }
     };
 
-    document.getElementById('filterPendingCheckbox').onchange = () => renderEmails(currentEmailsList);
-    document.getElementById('searchEmailInput').oninput = () => renderEmails(currentEmailsList);
+    document.getElementById('filterPendingCheckbox').onchange = () => {
+      emailDisplayCount = 10;
+      loadData(); // โหลดข้อมูลใหม่เพื่อให้แน่ใจว่าใช้ข้อมูลล่าสุดจาก Supabase
+    };
+    document.getElementById('searchEmailInput').oninput = () => {
+      emailDisplayCount = 10;
+      loadData();
+    };
+    document.getElementById('searchDateInput').oninput = () => {
+      emailDisplayCount = 10;
+      loadData();
+    };
     document.getElementById('searchBoardInput').oninput = () => {
       const searchTerm = document.getElementById('searchBoardInput').value.toLowerCase();
       const filtered = allMessagesList.filter(msg => (msg.title || '').toLowerCase().includes(searchTerm) || (msg.text || '').toLowerCase().includes(searchTerm));
@@ -1162,9 +1205,11 @@
     document.getElementById('clearFilterBtn').onclick = () => {
       document.getElementById('searchEmailInput').value = '';
       document.getElementById('searchBoardInput').value = '';
+      document.getElementById('searchDateInput').value = '';
       document.getElementById('filterPendingCheckbox').checked = false;
-      renderEmails(currentEmailsList);
-      renderMessages(allMessagesList);
+      emailDisplayCount = 10;
+      boardDisplayCount = 10;
+      loadData();
     };
 
     function updateLoadMoreButtons() {
