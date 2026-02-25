@@ -1118,14 +1118,15 @@
       const searchTerm = document.getElementById('searchEmailInput').value.toLowerCase();
       const dateSearch = document.getElementById('searchDateInput').value.trim();
       const selectedMonth = parseInt(document.getElementById('searchMonthSelect').value);
+      const currentYear = new Date().getFullYear();
       
       const filtered = emails.filter(mail => {
         const createdDate = new Date(mail.created_at);
         const matchesSearch = mail.title.toLowerCase().includes(searchTerm) || mail.email.toLowerCase().includes(searchTerm);
         const matchesPending = filterPending ? (mail.packageReceived && !mail.confirmReceived) : true;
         
-        // กรองตามเดือนที่เลือก
-        const matchesMonth = createdDate.getMonth() === selectedMonth;
+        // กรองตามเดือนและปีปัจจุบัน (เพื่อไม่ให้ข้อมูลปีเก่ามาปน)
+        const matchesMonth = createdDate.getMonth() === selectedMonth && createdDate.getFullYear() === currentYear;
 
         let matchesDate = true;
         if (dateSearch) {
@@ -1151,8 +1152,11 @@
         return;
       }
       
+      // เรียงลำดับตามเวลาล่าสุด (Newest First)
+      const sortedFiltered = [...filtered].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      
       // เก็บรายการที่กรองแล้วไว้ใช้กับ Load More
-      const allFiltered = filtered;
+      const allFiltered = sortedFiltered;
       const displayEmails = allFiltered.slice(0, emailDisplayCount);
       displayEmails.forEach(mail => {
         const div = document.createElement('div');
