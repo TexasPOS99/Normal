@@ -1028,6 +1028,7 @@
       renderEmails(emails);
       // เรียงที่อยู่แบบต่อท้าย (Oldest First) ตามความต้องการของผู้ใช้
       const sortedAddresses = [...addresses].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      allAddresses = sortedAddresses; // เก็บข้อมูลที่อยู่ทั้งหมดเพื่อใช้ค้นหา
       renderAddressList(sortedAddresses);
     }
 
