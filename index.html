@@ -424,10 +424,6 @@
              <div>
                 <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">ตัวเลือกเพิ่มเติม</label>
                 <div class="flex flex-wrap gap-4 mt-2">
-                    <label class="checkbox-icon" id="edit-package-label">
-                        <input type="checkbox" id="edit-package-checkbox" class="hidden">
-                        <span>📦 ได้รับเลขพัสดุ</span>
-                    </label>
                     <label class="checkbox-icon" id="edit-confirm-label">
                         <input type="checkbox" id="edit-confirm-checkbox" class="hidden">
                         <span>🤝 กดยืนยันสินค้า</span>
@@ -1215,8 +1211,8 @@
           item.email = parts[0] || '';
           item.password = parts[1] || '';
           item.status = parts[3] || '0';
-          item.packageReceived = parts[4] === '1';
           item.confirmReceived = parts[5] === '1';
+          item.hasParcel = false; // จะอัปเดตหลังโหลด parcels
           emails.push(item);
         } else if (item.rawUrl.startsWith(ADDR_PREFIX)) {
           const content = item.rawUrl.replace(ADDR_PREFIX, '');
@@ -1237,6 +1233,18 @@
           messages.push(item);
         }
       });
+
+      // โหลดข้อมูล parcels จาก Supabase เพื่อตรวจสอบว่า email ไหนมีเลขพัสดุ
+      if (emails.length > 0) {
+        try {
+          const emailIds = emails.map(e => e.id);
+          const { data: parcelData, error: parcelError } = await sb.from('parcels').select('email_id').in('email_id', emailIds);
+          if (!parcelError && parcelData) {
+            const parcelEmailIds = new Set(parcelData.map(p => p.email_id));
+            emails.forEach(e => { e.hasParcel = parcelEmailIds.has(e.id); });
+          }
+        } catch(e) { console.error('Load parcel summary error:', e); }
+      }
 
       currentEmailsList = emails;
       allMessagesList = messages;
@@ -1341,7 +1349,7 @@
       const filtered = emails.filter(mail => {
         const createdDate = new Date(mail.created_at);
         const matchesSearch = mail.title.toLowerCase().includes(searchTerm) || mail.email.toLowerCase().includes(searchTerm);
-        const matchesPending = filterPending ? (mail.packageReceived && !mail.confirmReceived) : true;
+        const matchesPending = filterPending ? (mail.hasParcel && !mail.confirmReceived) : true;
         
         // กรองตามเดือนและปีปัจจุบัน (เพื่อไม่ให้ข้อมูลปีเก่ามาปน)
         const matchesMonth = createdDate.getMonth() === selectedMonth && createdDate.getFullYear() === currentYear;
@@ -1403,11 +1411,8 @@
             <button class="btn-base btn-secondary py-2 text-xs copy-pass-btn">🔑 รหัส</button>
           </div>
           <div class="flex flex-wrap gap-2 pt-4 border-t border-border/50">
-            <button class="checkbox-icon parcel-open-btn" data-email-id="${mail.id}">
+            <button class="checkbox-icon parcel-open-btn ${mail.hasParcel ? 'checked-confirm' : ''}" data-email-id="${mail.id}">
               <span>📦 เลขพัสดุ</span>
-            </button>
-            <button class="checkbox-icon pkg-btn ${mail.packageReceived ? 'checked-package' : ''}">
-              <span>📦 ได้รับเลข</span>
             </button>
             <button class="checkbox-icon conf-btn ${mail.confirmReceived ? 'checked-confirm' : ''}">
               <span>🤝 ยืนยัน</span>
@@ -1417,7 +1422,7 @@
         div.querySelector('.copy-email-btn').onclick = (e) => copyTextToClipboard(mail.email, e.target);
         div.querySelector('.copy-pass-btn').onclick = (e) => copyTextToClipboard(mail.password, e.target);
         div.querySelector('.del-btn').onclick = () => { messageIdToDelete = mail.id; document.getElementById('confirmModal').classList.remove('hidden'); };
-        div.querySelector('.edit-btn').onclick = () => openEditModal(mail.id, mail.title, '', true, mail.email, mail.password, mail.status, '', mail.packageReceived, mail.confirmReceived);
+        div.querySelector('.edit-btn').onclick = () => openEditModal(mail.id, mail.title, '', true, mail.email, mail.password, mail.status, '', mail.confirmReceived);
         const passText = div.querySelector('.pass-text');
         div.querySelector('.toggle-pass').onclick = (e) => {
           const isHidden = passText.textContent === '••••••••';
@@ -1425,11 +1430,9 @@
           e.target.textContent = isHidden ? '🙈' : '👁️';
         };
         const parcelBtn = div.querySelector('.parcel-open-btn');
-        const pkgBtn = div.querySelector('.pkg-btn');
         const confBtn = div.querySelector('.conf-btn');
         if (parcelBtn) parcelBtn.onclick = (e) => { e.preventDefault(); openParcelModal(mail.id); };
-        if (pkgBtn) pkgBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.packageReceived; try { await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}${ns ? '1' : '0'}${EMAIL_SEPARATOR}${mail.confirmReceived ? '1' : '0'}` }).eq('id', mail.id); mail.packageReceived = ns; pkgBtn.classList.toggle('checked-package', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
-        if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}${mail.packageReceived ? '1' : '0'}${EMAIL_SEPARATOR}${ns ? '1' : '0'}` }).eq('id', mail.id); mail.confirmReceived = ns; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
+        if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${ns ? '1' : '0'}` }).eq('id', mail.id); mail.confirmReceived = ns; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
         container.appendChild(div);
       });
       updateLoadMoreButtons();
@@ -1600,7 +1603,7 @@
       }
     }
 
-    function openEditModal(id, currentTitle, currentText, isEmail = false, emailVal = '', passVal = '', currentStatus = '0', extraText = '', packageReceived = false, confirmReceived = false) {
+    function openEditModal(id, currentTitle, currentText, isEmail = false, emailVal = '', passVal = '', currentStatus = '0', extraText = '', confirmReceived = false) {
       messageIdToEdit = id;
       isEditingEmailMode = isEmail;
       document.getElementById('editTitleInput').value = currentTitle || '';
@@ -1610,11 +1613,8 @@
         document.getElementById('editEmailField').value = emailVal || '';
         document.getElementById('editPasswordField').value = passVal || '';
         document.querySelectorAll('input[name="edit-email-status"]').forEach(r => { r.checked = (r.value === currentStatus); });
-        const pkgCb = document.getElementById('edit-package-checkbox');
         const confCb = document.getElementById('edit-confirm-checkbox');
-        pkgCb.checked = !!packageReceived;
         confCb.checked = !!confirmReceived;
-        document.getElementById('edit-package-label').classList.toggle('checked-package', !!packageReceived);
         document.getElementById('edit-confirm-label').classList.toggle('checked-confirm', !!confirmReceived);
       } else {
         document.getElementById('editMessageContainer').classList.remove('hidden');
@@ -1648,10 +1648,9 @@
         const p = document.getElementById('editPasswordField').value.trim();
         const statusRadio = document.querySelector('input[name="edit-email-status"]:checked');
         const s = statusRadio ? statusRadio.value : '0';
-        const pkg = document.getElementById('edit-package-checkbox').checked ? '1' : '0';
         const conf = document.getElementById('edit-confirm-checkbox').checked ? '1' : '0';
         if (!e || !p) { alert('กรุณากรอกข้อมูลให้ครบ'); return; }
-        newUrl = `${EMAIL_PREFIX}${e}${EMAIL_SEPARATOR}${p}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${s}${EMAIL_SEPARATOR}${pkg}${EMAIL_SEPARATOR}${conf}`;
+        newUrl = `${EMAIL_PREFIX}${e}${EMAIL_SEPARATOR}${p}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${s}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${conf}`;
       } else {
         const t = document.getElementById('editMessageInput').value;
         const xt = document.getElementById('editExtraMessageInput').value;
@@ -1672,11 +1671,6 @@
       finally { btn.textContent = originalText; }
     };
 
-    document.getElementById('edit-package-label').addEventListener('click', () => {
-      const cb = document.getElementById('edit-package-checkbox');
-      const label = document.getElementById('edit-package-label');
-      setTimeout(() => { label.classList.toggle('checked-package', cb.checked); }, 0);
-    });
     document.getElementById('edit-confirm-label').addEventListener('click', () => {
       const cb = document.getElementById('edit-confirm-checkbox');
       const label = document.getElementById('edit-confirm-label');
@@ -1706,10 +1700,10 @@
     };
 
     // =============================================
-    // --- PARCEL MANAGEMENT SYSTEM ---
+    // --- PARCEL MANAGEMENT SYSTEM (SUPABASE) ---
     // =============================================
     let currentParcelEmailId = null;
-    const PARCEL_STORAGE_PREFIX = 'parcel_';
+    let parcelCache = {}; // cache: emailId -> parcels[]
 
     function openParcelModal(emailId) {
       currentParcelEmailId = emailId;
@@ -1724,93 +1718,128 @@
       currentParcelEmailId = null;
     }
 
-    function getParcelData() {
-      if (!currentParcelEmailId) return [];
-      const key = PARCEL_STORAGE_PREFIX + currentParcelEmailId;
-      const data = localStorage.getItem(key);
-      return data ? JSON.parse(data) : [];
+    async function loadParcelFromSupabase(emailId) {
+      try {
+        const { data, error } = await sb.from('parcels').select('*').eq('email_id', emailId).order('created_at', { ascending: true });
+        if (error) throw error;
+        parcelCache[emailId] = data || [];
+        return parcelCache[emailId];
+      } catch(e) {
+        console.error('Load parcel error:', e);
+        return [];
+      }
     }
 
-    function saveParcelData(parcels) {
-      if (!currentParcelEmailId) return;
-      const key = PARCEL_STORAGE_PREFIX + currentParcelEmailId;
-      localStorage.setItem(key, JSON.stringify(parcels));
+    function getParcelCache(emailId) {
+      return parcelCache[emailId] || [];
     }
 
-    function renderParcelList() {
+    async function renderParcelList() {
       const container = document.getElementById('parcelListContainer');
-      const parcels = getParcelData();
+      container.innerHTML = '<div class="parcel-item-empty">กำลังโหลด...</div>';
+      const parcels = await loadParcelFromSupabase(currentParcelEmailId);
       
       if (parcels.length === 0) {
-        container.innerHTML = '<div class="parcel-item-empty">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e40\u0e25\u0e02\u0e1e\u0e31\u0e2a\u0e14\u0e38</div>';
+        container.innerHTML = '<div class="parcel-item-empty">ยังไม่มีเลขพัสดุ</div>';
         return;
       }
       
       container.innerHTML = parcels.map((parcel, idx) => `
         <div class="parcel-item">
-          <div style="font-weight: 600; color: #0f172a; margin-bottom: 4px;">\u0e0a\u0e38\u0e14\u0e17\u0e35\u0e48 ${idx + 1}</div>
-          <div>${escapeHTML(parcel)}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-weight: 600; color: #0f172a;">ชุดที่ ${idx + 1}</span>
+            <button class="parcel-del-btn" data-parcel-id="${parcel.id}" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:0.85rem;padding:2px 6px;border-radius:6px;" title="ลบ">🗑</button>
+          </div>
+          <div style="white-space:pre-wrap;">${escapeHTML(parcel.tracking_data)}</div>
         </div>
       `).join('');
+
+      container.querySelectorAll('.parcel-del-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const pid = btn.dataset.parcelId;
+          if (!confirm('ลบเลขพัสดุชุดนี้?')) return;
+          try {
+            const { error } = await sb.from('parcels').delete().eq('id', pid);
+            if (error) throw error;
+            showToast('ลบแล้ว 🗑️');
+            await renderParcelList();
+            updateParcelButtonColor();
+          } catch(e) { alert('ลบไม่สำเร็จ: ' + e.message); }
+        };
+      });
+    }
+
+    async function updateParcelButtonColor() {
+      if (!currentParcelEmailId) return;
+      const parcels = await loadParcelFromSupabase(currentParcelEmailId);
+      const hasParcel = parcels.length > 0;
+      const btn = document.querySelector(`.parcel-open-btn[data-email-id="${currentParcelEmailId}"]`);
+      if (btn) btn.classList.toggle('checked-confirm', hasParcel);
     }
 
     async function pasteParcelData() {
       try {
         const text = await navigator.clipboard.readText();
         if (!text.trim()) {
-          alert('Clipboard \u0e27\u0e48\u0e32\u0e07\u0e40\u0e1b\u0e25\u0e48\u0e32');
+          alert('Clipboard ว่างเปล่า');
           return;
         }
         
         const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         if (lines.length < 2) {
-          alert('\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a\u0e15\u0e49\u0e2d\u0e07\u0e21\u0e35\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e19\u0e49\u0e2d\u0e22 2 \u0e1a\u0e23\u0e23\u0e17\u0e31\u0e14');
+          alert('รูปแบบต้องมีอย่างน้อย 2 บรรทัด');
           return;
         }
         
         const parcelSet = lines.slice(0, 2).join('\n');
-        let parcels = getParcelData();
+        const existingParcels = await loadParcelFromSupabase(currentParcelEmailId);
         
-        if (parcels.includes(parcelSet)) {
-          alert('\u0e40\u0e25\u0e02\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e0a\u0e38\u0e14\u0e19\u0e35\u0e49\u0e21\u0e35\u0e2d\u0e22\u0e39\u0e48\u0e41\u0e25\u0e49\u0e27');
+        if (existingParcels.some(p => p.tracking_data === parcelSet)) {
+          alert('เลขพัสดุชุดนี้มีอยู่แล้ว');
           return;
         }
         
-        if (parcels.length >= 3) {
-          alert('\u0e40\u0e01\u0e34\u0e19\u0e08\u0e33\u0e19\u0e27\u0e19\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14 3 \u0e0a\u0e38\u0e14');
+        if (existingParcels.length >= 3) {
+          alert('เกินจำนวนสูงสุด 3 ชุด');
           return;
         }
         
-        parcels.push(parcelSet);
-        saveParcelData(parcels);
-        renderParcelList();
-        showToast('\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e40\u0e25\u0e02\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e41\u0e25\u0e49\u0e27 \u2705');
+        const { error } = await sb.from('parcels').insert([{ email_id: currentParcelEmailId, tracking_data: parcelSet }]);
+        if (error) throw error;
+        showToast('เพิ่มเลขพัสดุแล้ว ✅');
+        await renderParcelList();
+        await updateParcelButtonColor();
       } catch (err) {
-        alert('\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07 Clipboard \u0e44\u0e14\u0e49');
+        if (err.message) alert('เกิดข้อผิดพลาด: ' + err.message);
+        else alert('ไม่สามารถเข้าถึง Clipboard ได้');
       }
     }
 
-    function copyAllParcels() {
-      const parcels = getParcelData();
+    async function copyAllParcels() {
+      const parcels = await loadParcelFromSupabase(currentParcelEmailId);
       if (parcels.length === 0) {
-        alert('\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e40\u0e25\u0e02\u0e1e\u0e31\u0e2a\u0e14\u0e38');
+        alert('ยังไม่มีเลขพัสดุ');
         return;
       }
       
-      const text = parcels.join('\n\n');
+      const text = parcels.map(p => p.tracking_data).join('\n\n');
       navigator.clipboard.writeText(text).then(() => {
-        showToast('\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e41\u0e25\u0e49\u0e27 \u2705');
+        showToast('คัดลอกแล้ว ✅');
       }).catch(() => {
-        alert('\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e44\u0e14\u0e49');
+        alert('ไม่สามารถคัดลอกได้');
       });
     }
 
-    function clearAllParcels() {
-      if (confirm('\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e40\u0e25\u0e02\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e43\u0e0a\u0e48\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?')) {
-        saveParcelData([]);
-        renderParcelList();
-        showToast('\u0e25\u0e1a\u0e41\u0e25\u0e49\u0e27 \ud83d\uddd1\ufe0f');
-      }
+    async function clearAllParcels() {
+      if (!confirm('ต้องการลบเลขพัสดุทั้งหมดใช่หรือไม่?')) return;
+      try {
+        const { error } = await sb.from('parcels').delete().eq('email_id', currentParcelEmailId);
+        if (error) throw error;
+        parcelCache[currentParcelEmailId] = [];
+        await renderParcelList();
+        await updateParcelButtonColor();
+        showToast('ลบแล้ว 🗑️');
+      } catch(e) { alert('ลบไม่สำเร็จ: ' + e.message); }
     }
 
     document.getElementById('parcelModalCloseBtn').onclick = closeParcelModal;
@@ -1842,7 +1871,8 @@
     // =============================================
     initAddressSystem();
     loadData();
-    sb.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, loadData).subscribe();
+    sb.channel('links-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, loadData).subscribe();
+    sb.channel('parcels-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'parcels' }, loadData).subscribe();
 
   </script>
 </body>
