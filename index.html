@@ -1237,7 +1237,7 @@
         const email = parts[0].trim();
         const password = parts[1].trim();
         const title = email.split('@')[0] || email;
-        const url = `${EMAIL_PREFIX}${email}${EMAIL_SEPARATOR}${password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0`;
+        const url = `${EMAIL_PREFIX}${email}${EMAIL_SEPARATOR}${password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}1${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0`;
         const btn = document.getElementById('quickPasteEmailBtn');
         btn.textContent = 'กำลังบันทึก...';
         try {
@@ -1306,7 +1306,7 @@
       const password = document.getElementById('passwordFieldInput').value.trim();
       if (!email || !password) { alert('กรุณากรอกอีเมลและรหัสผ่าน'); return; }
       const finalTitle = title || email.split('@')[0];
-      const url = `${EMAIL_PREFIX}${email}${EMAIL_SEPARATOR}${password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0`;
+      const url = `${EMAIL_PREFIX}${email}${EMAIL_SEPARATOR}${password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}1${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0`;
       const btn = document.getElementById('saveEmailBtn');
       btn.textContent = 'กำลังบันทึก...';
       try {
