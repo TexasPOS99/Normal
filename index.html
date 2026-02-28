@@ -95,6 +95,35 @@
       color: var(--primary);
     }
 
+    /* Collapsible Section Styles */
+    .collapsible-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out, opacity 0.2s ease-out, margin-top 0.3s ease-out;
+      opacity: 0;
+    }
+    .collapsible-content.expanded {
+      max-height: 500px; /* Adjust based on content height */
+      opacity: 1;
+      margin-top: 1.5rem;
+    }
+    .collapsible-trigger {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .collapsible-trigger .arrow-icon {
+      transition: transform 0.3s ease;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .collapsible-trigger.active .arrow-icon {
+      transform: rotate(180deg);
+    }
+
     /* Mobile optimization for buttons and inputs */
     @media (max-width: 640px) {
       .btn-base {
@@ -463,13 +492,19 @@
         </div>
 
         <div class="card-premium">
-            <div class="space-y-4">
-                <input id="emailTitleInput" type="text" class="input-premium" placeholder="ชื่อเรียก / หัวข้อ..." />
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <input id="emailFieldInput" type="text" class="input-premium" placeholder="อีเมล / Username" />
-                    <input id="passwordFieldInput" type="text" class="input-premium" placeholder="รหัสผ่าน" />
+            <div id="emailFormTrigger" class="collapsible-trigger">
+                <h3 class="font-heading text-lg flex items-center gap-2">➕ เพิ่มแบบกรอกเอง</h3>
+                <span class="arrow-icon">▼</span>
+            </div>
+            <div id="emailFormContent" class="collapsible-content">
+                <div class="space-y-4">
+                    <input id="emailTitleInput" type="text" class="input-premium" placeholder="ชื่อเรียก / หัวข้อ..." />
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <input id="emailFieldInput" type="text" class="input-premium" placeholder="อีเมล / Username" />
+                        <input id="passwordFieldInput" type="text" class="input-premium" placeholder="รหัสผ่าน" />
+                    </div>
+                    <button id="saveEmailBtn" class="btn-base btn-primary">💾 บันทึกบัญชี</button>
                 </div>
-                <button id="saveEmailBtn" class="btn-base btn-primary">💾 บันทึกบัญชี</button>
             </div>
         </div>
 
@@ -1481,6 +1516,18 @@
       if (val > max) val = max;
       input.value = val;
     };
+
+    // =============================================
+    // --- COLLAPSIBLE SYSTEM ---
+    // =============================================
+    const emailFormTrigger = document.getElementById('emailFormTrigger');
+    const emailFormContent = document.getElementById('emailFormContent');
+    if (emailFormTrigger && emailFormContent) {
+      emailFormTrigger.onclick = () => {
+        emailFormTrigger.classList.toggle('active');
+        emailFormContent.classList.toggle('expanded');
+      };
+    }
 
     // =============================================
     // --- INIT ---
