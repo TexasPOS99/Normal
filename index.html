@@ -527,20 +527,28 @@
     </div>
   </div>
 
-  <!-- Result Modal -->
+  <!-- Result Modal (Redesigned) -->
   <div id="resultModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden modal-backdrop">
-    <div class="modal-content rounded-3xl p-8 max-w-2xl w-full mx-4">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-2xl font-heading" style="color: #0f172a;">✨ ข้อความพรางของคุณ</h3>
-        <button id="closeResultBtn" class="text-hint hover:text-primary text-2xl">✕</button>
+    <div class="modal-content rounded-3xl max-w-2xl w-full mx-4" style="padding:0; overflow:hidden;">
+      <!-- Header with gradient -->
+      <div style="background: linear-gradient(135deg, #2563eb, #0ea5e9); padding: 24px 28px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 class="font-heading" style="color:white; font-size:1.35rem; margin:0;">✨ ผลลัพธ์ข้อความพราง</h3>
+          <p style="color:rgba(255,255,255,0.75); font-size:0.8rem; margin:4px 0 0 0; font-family:'Kanit',sans-serif;">เลือกรูปแบบที่ต้องการและกดคัดลอก</p>
+        </div>
+        <button id="closeResultBtn" style="background:rgba(255,255,255,0.2); border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✕</button>
       </div>
       
-      <div id="resultList" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-        <!-- Results will be here -->
-      </div>
+      <!-- Result List -->
+      <div style="padding: 24px 28px;">
+        <div id="resultList" class="space-y-4 max-h-[55vh] overflow-y-auto pr-1">
+          <!-- Results will be here -->
+        </div>
 
-      <div class="mt-8 pt-6 border-t border-border flex justify-center">
-        <button class="btn-base btn-secondary w-auto px-8" onclick="document.getElementById('resultModal').classList.add('hidden')">ปิดหน้าต่าง</button>
+        <!-- Footer -->
+        <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border); display:flex; justify-content:center;">
+          <button class="btn-base btn-secondary" style="width:auto; padding:10px 32px; border-radius:14px; font-size:0.85rem;" onclick="document.getElementById('resultModal').classList.add('hidden')">❌ ปิดหน้าต่าง</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1225,17 +1233,60 @@
 
         const resultList = document.getElementById('resultList');
         resultList.innerHTML = '';
+        const badges = ['🎲', '🎭', '🎨'];
         results.forEach((res, idx) => {
           const div = document.createElement('div');
-          div.className = "p-4 rounded-2xl border border-border bg-bg-input";
+          div.style.cssText = 'background:white; border:1px solid var(--border); border-radius:20px; padding:16px; transition: box-shadow 0.2s ease, border-color 0.2s ease;';
+          div.onmouseover = () => { div.style.boxShadow = '0 4px 20px rgba(37,99,235,0.1)'; div.style.borderColor = '#93c5fd'; };
+          div.onmouseout  = () => { div.style.boxShadow = 'none'; div.style.borderColor = 'var(--border)'; };
           div.innerHTML = `
-            <div class="flex justify-between items-center mb-3">
-              <span class="font-heading text-sm" style="color: #2563eb;">รูปแบบที่ ${idx + 1}</span>
-              <button class="copy-result-btn btn-base btn-primary py-1 px-4 text-xs" style="width: auto;">📋 คัดลอก</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="background:linear-gradient(135deg,#2563eb,#0ea5e9); color:white; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem;">${badges[idx] || '✨'}</span>
+                <span class="font-heading" style="color:#0f172a; font-size:0.9rem;">รูปแบบที่ ${idx + 1}</span>
+              </div>
             </div>
-            <p class="text-sm whitespace-pre-wrap break-all" style="color: #0f172a; font-family: 'JetBrains Mono', monospace; line-height: 1.8;">${escapeHTML(res)}</p>
+            <p style="color:#334155; font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.85; white-space:pre-wrap; word-break:break-all; background:#f8fafc; padding:12px; border-radius:12px; margin-bottom:12px;">${escapeHTML(res)}</p>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="copy-result-btn" style="flex:1; min-width:120px; padding:10px 14px; border-radius:12px; border:none; background:linear-gradient(135deg,#2563eb,#0ea5e9); color:white; font-weight:600; font-size:0.8rem; cursor:pointer; font-family:'Kanit',sans-serif; transition:all 0.2s ease; display:flex; align-items:center; justify-content:center; gap:6px;">📋 คัดลอก</button>
+              <button class="copy-to-board-btn" style="flex:1; min-width:120px; padding:10px 14px; border-radius:12px; border:none; background:linear-gradient(135deg,#10b981,#059669); color:white; font-weight:600; font-size:0.8rem; cursor:pointer; font-family:'Kanit',sans-serif; transition:all 0.2s ease; display:flex; align-items:center; justify-content:center; gap:6px;">📋 คัดลอก + ส่งไปบอร์ด</button>
+            </div>
           `;
+          // ปุ่มคัดลอกธรรมดา
           div.querySelector('.copy-result-btn').onclick = (e) => copyTextToClipboard(res, e.target);
+          // ปุ่มคัดลอก + ส่งไปบอร์ด
+          div.querySelector('.copy-to-board-btn').onclick = async (e) => {
+            const btn = e.currentTarget;
+            try {
+              // 1. คัดลอกไป Clipboard
+              await navigator.clipboard.writeText(res);
+              // 2. ใส่ข้อความในช่องบอร์ด (ต่อท้ายข้อความเดิมถ้ามี)
+              const boardInput = document.getElementById('boardMessageInput');
+              const current = boardInput.value.trim();
+              boardInput.value = current ? current + '\n' + res : res;
+              // 3. ปิด Modal
+              document.getElementById('resultModal').classList.add('hidden');
+              // 4. สลับ Tab ไปบอร์ด
+              document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
+              const boardTab = document.querySelector('.tab-item[data-tab="board"]');
+              if (boardTab) boardTab.classList.add('active');
+              ['camouflage', 'board', 'email'].forEach(t => {
+                document.getElementById(t + '-tab').classList.toggle('hidden', t !== 'board');
+              });
+              // 5. Scroll ไปที่ช่องข้อความ
+              boardInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              boardInput.focus();
+              // 6. แจ้งผล
+              showToast('คัดลอกและส่งไปบอร์ดแล้ว ✨');
+            } catch(err) {
+              alert('ไม่สามารถคัดลอกได้');
+            }
+          };
+          // Hover effect ปุ่ม
+          div.querySelectorAll('button').forEach(b => {
+            b.onmouseover = () => { b.style.transform = 'translateY(-1px)'; b.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; };
+            b.onmouseout  = () => { b.style.transform = 'translateY(0)'; b.style.boxShadow = 'none'; };
+          });
           resultList.appendChild(div);
         });
 
