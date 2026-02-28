@@ -843,7 +843,24 @@
           drops[i]++;
         }
       }
-      setInterval(draw, 35);
+      let matrixAnimId = null;
+      let lastDraw = 0;
+      function animateMatrix(ts) {
+        if (ts - lastDraw >= 35) {
+          draw();
+          lastDraw = ts;
+        }
+        matrixAnimId = requestAnimationFrame(animateMatrix);
+      }
+      matrixAnimId = requestAnimationFrame(animateMatrix);
+      // หยุด animation เมื่อไม่ได้ดูหน้า (ประหยัด battery)
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          if (matrixAnimId) { cancelAnimationFrame(matrixAnimId); matrixAnimId = null; }
+        } else {
+          if (!matrixAnimId) matrixAnimId = requestAnimationFrame(animateMatrix);
+        }
+      });
       window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
     })();
 
@@ -1134,7 +1151,7 @@
               isEditingEmailMode = false;
               document.getElementById('editTitleInput').value = addr.name;
               document.getElementById('editEmailContainer').classList.add('hidden');
-              document.getElementById('editBoardContainer').classList.add('hidden');
+              document.getElementById('editMessageContainer').classList.add('hidden');
               document.getElementById('editAddressContainer').classList.remove('hidden');
               
               document.getElementById('editAddressFull').value = addr.address;
@@ -1260,10 +1277,9 @@
             try {
               // 1. คัดลอกไป Clipboard
               await navigator.clipboard.writeText(res);
-              // 2. ใส่ข้อความในช่องบอร์ด (ต่อท้ายข้อความเดิมถ้ามี)
+              // 2. ใส่ข้อความในช่องบอร์ด (แทนที่ข้อความเดิม)
               const boardInput = document.getElementById('boardMessageInput');
-              const current = boardInput.value.trim();
-              boardInput.value = current ? current + '\n' + res : res;
+              boardInput.value = res;
               // 3. ปิด Modal
               document.getElementById('resultModal').classList.add('hidden');
               // 4. สลับ Tab ไปบอร์ด
@@ -1494,6 +1510,7 @@
       
       // เก็บรายการที่กรองแล้วไว้ใช้กับ Load More
       const allFiltered = sortedFiltered;
+      lastFilteredEmailCount = allFiltered.length;
       const displayEmails = allFiltered.slice(0, emailDisplayCount);
       displayEmails.forEach(mail => {
         const div = document.createElement('div');
@@ -1543,7 +1560,22 @@
         const parcelBtn = div.querySelector('.parcel-open-btn');
         const confBtn = div.querySelector('.conf-btn');
         if (parcelBtn) parcelBtn.onclick = (e) => { e.preventDefault(); openParcelModal(mail.id); };
-        if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { const parcelStr = mail.parcels && mail.parcels.length > 0 ? mail.parcels.join(PARCEL_SEPARATOR) : ''; await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${ns ? '1' : '0'}${EMAIL_SEPARATOR}${parcelStr}` }).eq('id', mail.id); mail.confirmReceived = ns; mail.rawUrl = `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${ns ? '1' : '0'}${EMAIL_SEPARATOR}${parcelStr}`; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? '✅ ยืนยันแล้ว' : '↩ยกเลิกแล้ว'); } catch(err) { alert('เกิดข้อผิดพลาด'); } };
+        if (confBtn) confBtn.onclick = async (e) => {
+          e.preventDefault();
+          const ns = !mail.confirmReceived;
+          try {
+            mail.confirmReceived = ns;
+            const newUrl = buildEmailUrl(mail, mail.parcels || []);
+            const { error } = await sb.from('links').update({ url: newUrl }).eq('id', mail.id);
+            if (error) throw error;
+            mail.rawUrl = newUrl;
+            confBtn.classList.toggle('checked-confirm', ns);
+            showToast(ns ? '✅ ยืนยันแล้ว' : '↩ ยกเลิกแล้ว');
+          } catch(err) {
+            mail.confirmReceived = !ns; // rollback
+            alert('เกิดข้อผิดพลาด: ' + (err.message || err));
+          }
+        };
         container.appendChild(div);
       });
       updateLoadMoreButtons();
@@ -1691,14 +1723,16 @@
       document.getElementById('filterPendingCheckbox').checked = false;
       emailDisplayCount = 10;
       boardDisplayCount = 10;
-      loadData();
+      renderEmails(currentEmailsList);
+      renderMessages(allMessagesList);
     };
 
+    let lastFilteredEmailCount = 0; // เก็บจำนวน filtered emails ล่าสุด
     function updateLoadMoreButtons() {
       const emailContainer = document.getElementById('email-container');
       const boardContainer = document.getElementById('board-container');
       document.querySelectorAll('.load-more-btn').forEach(btn => btn.remove());
-      if (currentEmailsList.length > emailDisplayCount) {
+      if (lastFilteredEmailCount > emailDisplayCount) {
         const btn = document.createElement('button');
         btn.className = 'load-more-btn btn-base btn-secondary col-span-1 md:col-span-2 py-3 mt-4';
         btn.textContent = '📥 ดูเพิ่มเติม';
@@ -1718,8 +1752,11 @@
       messageIdToEdit = id;
       isEditingEmailMode = isEmail;
       document.getElementById('editTitleInput').value = currentTitle || '';
+      // ซ่อนทุก container ก่อน
+      document.getElementById('editMessageContainer').classList.add('hidden');
+      document.getElementById('editEmailContainer').classList.add('hidden');
+      document.getElementById('editAddressContainer').classList.add('hidden');
       if (isEmail) {
-        document.getElementById('editMessageContainer').classList.add('hidden');
         document.getElementById('editEmailContainer').classList.remove('hidden');
         document.getElementById('editEmailField').value = emailVal || '';
         document.getElementById('editPasswordField').value = passVal || '';
