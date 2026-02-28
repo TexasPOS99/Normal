@@ -778,7 +778,7 @@
     const EMAIL_PREFIX = "vault://";
     const ADDR_PREFIX = "addr://";
     const EMAIL_SEPARATOR = "|::|";
-    const PARCEL_SEPARATOR = "|||";
+    const PARCEL_SEPARATOR = "\u2295\u2295\u2295"; // ⊕⊕⊕ ไม่ชนกับ |||EXTRA||| ใน messages
 
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentEmailsList = [];
@@ -1240,8 +1240,9 @@
 
       currentEmailsList = emails;
       allMessagesList = messages;
-      emailDisplayCount = 10;
-      boardDisplayCount = 10;
+      // ไม่รีเซ็ต displayCount เมื่อ Realtime update เพื่อรักษาสถานะ Load More
+      if (emailDisplayCount < 10) emailDisplayCount = 10;
+      if (boardDisplayCount < 10) boardDisplayCount = 10;
       renderMessages(messages);
       renderEmails(emails);
       // เรียงที่อยู่แบบต่อท้าย (Oldest First) ตามความต้องการของผู้ใช้
@@ -1424,7 +1425,7 @@
         const parcelBtn = div.querySelector('.parcel-open-btn');
         const confBtn = div.querySelector('.conf-btn');
         if (parcelBtn) parcelBtn.onclick = (e) => { e.preventDefault(); openParcelModal(mail.id); };
-        if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { const parcelStr = mail.parcels && mail.parcels.length > 0 ? mail.parcels.join(PARCEL_SEPARATOR) : ''; await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${ns ? '1' : '0'}${EMAIL_SEPARATOR}${parcelStr}` }).eq('id', mail.id); mail.confirmReceived = ns; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
+        if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { const parcelStr = mail.parcels && mail.parcels.length > 0 ? mail.parcels.join(PARCEL_SEPARATOR) : ''; await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${ns ? '1' : '0'}${EMAIL_SEPARATOR}${parcelStr}` }).eq('id', mail.id); mail.confirmReceived = ns; mail.rawUrl = `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${ns ? '1' : '0'}${EMAIL_SEPARATOR}${parcelStr}`; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? '✅ ยืนยันแล้ว' : '↩ยกเลิกแล้ว'); } catch(err) { alert('เกิดข้อผิดพลาด'); } };
         container.appendChild(div);
       });
       updateLoadMoreButtons();
@@ -1455,7 +1456,7 @@
         const email = parts[0].trim();
         const password = parts[1].trim();
         const title = email.split('@')[0] || email;
-        const url = `${EMAIL_PREFIX}${email}${EMAIL_SEPARATOR}${password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}1${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0`;
+        const url = `${EMAIL_PREFIX}${email}${EMAIL_SEPARATOR}${password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}1${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}`;
         const btn = document.getElementById('quickPasteEmailBtn');
         btn.textContent = 'กำลังบันทึก...';
         try {
@@ -1524,7 +1525,7 @@
       const password = document.getElementById('passwordFieldInput').value.trim();
       if (!email || !password) { alert('กรุณากรอกอีเมลและรหัสผ่าน'); return; }
       const finalTitle = title || email.split('@')[0];
-      const url = `${EMAIL_PREFIX}${email}${EMAIL_SEPARATOR}${password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}1${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0`;
+      const url = `${EMAIL_PREFIX}${email}${EMAIL_SEPARATOR}${password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}1${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}`;
       const btn = document.getElementById('saveEmailBtn');
       btn.textContent = 'กำลังบันทึก...';
       try {
@@ -1540,19 +1541,19 @@
 
     document.getElementById('filterPendingCheckbox').onchange = () => {
       emailDisplayCount = 10;
-      loadData(); // โหลดข้อมูลใหม่เพื่อให้แน่ใจว่าใช้ข้อมูลล่าสุดจาก Supabase
+      renderEmails(currentEmailsList); // ใช้ข้อมูลที่โหลดไว้แล้ว ไม่ต้อง request ใหม่
     };
     document.getElementById('searchEmailInput').oninput = () => {
       emailDisplayCount = 10;
-      loadData();
+      renderEmails(currentEmailsList);
     };
     document.getElementById('searchDateInput').oninput = () => {
       emailDisplayCount = 10;
-      loadData();
+      renderEmails(currentEmailsList);
     };
     document.getElementById('searchMonthSelect').onchange = () => {
       emailDisplayCount = 10;
-      loadData();
+      renderEmails(currentEmailsList);
     };
     
     // ตั้งค่าเดือนปัจจุบันเป็นค่าเริ่มต้น
@@ -1730,10 +1731,13 @@
       const newUrl = buildEmailUrl(mail, newParcels);
       const { error } = await sb.from('links').update({ url: newUrl }).eq('id', mail.id);
       if (error) throw error;
-      // อัปเดต local cache
+      // อัปเดต local cache ทันที (ไม่ต้องรอ Realtime)
       mail.parcels = newParcels;
       mail.hasParcel = newParcels.length > 0;
       mail.rawUrl = newUrl;
+      // อัปเดตสีปุ่มในการ์ดทันที
+      const cardBtn = document.querySelector(`.parcel-open-btn[data-email-id="${mail.id}"]`);
+      if (cardBtn) cardBtn.classList.toggle('checked-confirm', mail.hasParcel);
     }
 
     function renderParcelList() {
@@ -1790,14 +1794,15 @@
         }
         
         const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        if (lines.length < 2) {
-          alert('รูปแบบต้องมีอย่างน้อย 2 บรรทัด');
+        if (lines.length < 1) {
+          alert('Clipboard ว่างเปล่า');
           return;
         }
         
-        const parcelSet = lines.slice(0, 2).join('\n');
+        // เก็บทุกบรรทัด (สูงสุด 3 บรรทัด)
+        const parcelSet = lines.slice(0, 3).join('\n');
         const mail = getCurrentMailData();
-        if (!mail) return;
+        if (!mail) { alert('ไม่พบข้อมูลอีเมล'); return; }
         
         if (mail.parcels.includes(parcelSet)) {
           alert('เลขพัสดุชุดนี้มีอยู่แล้ว');
@@ -1810,12 +1815,23 @@
         }
         
         const newParcels = [...mail.parcels, parcelSet];
-        await saveParcelsToSupabase(mail, newParcels);
-        renderParcelList();
-        updateParcelButtonColor();
-        showToast('เพิ่มเลขพัสดุแล้ว ✅');
+        const pasteBtn = document.getElementById('parcelPasteBtn');
+        const origText = pasteBtn.textContent;
+        pasteBtn.textContent = 'กำลังบันทึก...';
+        pasteBtn.disabled = true;
+        try {
+          await saveParcelsToSupabase(mail, newParcels);
+          renderParcelList();
+          updateParcelButtonColor();
+          showToast('เพิ่มเลขพัสดุแล้ว ✅');
+        } catch (err) {
+          alert('เกิดข้อผิดพลาด: ' + (err.message || err));
+        } finally {
+          pasteBtn.textContent = origText;
+          pasteBtn.disabled = false;
+        }
       } catch (err) {
-        alert('เกิดข้อผิดพลาด: ' + (err.message || err));
+        alert('ไม่สามารถเข้าถึง Clipboard ได้');
       }
     }
 
