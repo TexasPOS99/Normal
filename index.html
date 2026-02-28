@@ -778,6 +778,7 @@
     const EMAIL_PREFIX = "vault://";
     const ADDR_PREFIX = "addr://";
     const EMAIL_SEPARATOR = "|::|";
+    const PARCEL_SEPARATOR = "|||";
 
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentEmailsList = [];
@@ -1212,7 +1213,10 @@
           item.password = parts[1] || '';
           item.status = parts[3] || '0';
           item.confirmReceived = parts[5] === '1';
-          item.hasParcel = false; // จะอัปเดตหลังโหลด parcels
+          // เลขพัสดุเก็บใน parts[6] คั่นด้วย PARCEL_SEPARATOR
+          const parcelRaw = parts[6] || '';
+          item.parcels = parcelRaw ? parcelRaw.split(PARCEL_SEPARATOR).filter(p => p.trim()) : [];
+          item.hasParcel = item.parcels.length > 0;
           emails.push(item);
         } else if (item.rawUrl.startsWith(ADDR_PREFIX)) {
           const content = item.rawUrl.replace(ADDR_PREFIX, '');
@@ -1233,18 +1237,6 @@
           messages.push(item);
         }
       });
-
-      // โหลดข้อมูล parcels จาก Supabase เพื่อตรวจสอบว่า email ไหนมีเลขพัสดุ
-      if (emails.length > 0) {
-        try {
-          const emailIds = emails.map(e => e.id);
-          const { data: parcelData, error: parcelError } = await sb.from('parcels').select('email_id').in('email_id', emailIds);
-          if (!parcelError && parcelData) {
-            const parcelEmailIds = new Set(parcelData.map(p => p.email_id));
-            emails.forEach(e => { e.hasParcel = parcelEmailIds.has(e.id); });
-          }
-        } catch(e) { console.error('Load parcel summary error:', e); }
-      }
 
       currentEmailsList = emails;
       allMessagesList = messages;
@@ -1432,7 +1424,7 @@
         const parcelBtn = div.querySelector('.parcel-open-btn');
         const confBtn = div.querySelector('.conf-btn');
         if (parcelBtn) parcelBtn.onclick = (e) => { e.preventDefault(); openParcelModal(mail.id); };
-        if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${ns ? '1' : '0'}` }).eq('id', mail.id); mail.confirmReceived = ns; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
+        if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { const parcelStr = mail.parcels && mail.parcels.length > 0 ? mail.parcels.join(PARCEL_SEPARATOR) : ''; await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${ns ? '1' : '0'}${EMAIL_SEPARATOR}${parcelStr}` }).eq('id', mail.id); mail.confirmReceived = ns; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
         container.appendChild(div);
       });
       updateLoadMoreButtons();
@@ -1650,7 +1642,11 @@
         const s = statusRadio ? statusRadio.value : '0';
         const conf = document.getElementById('edit-confirm-checkbox').checked ? '1' : '0';
         if (!e || !p) { alert('กรุณากรอกข้อมูลให้ครบ'); return; }
-        newUrl = `${EMAIL_PREFIX}${e}${EMAIL_SEPARATOR}${p}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${s}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${conf}`;
+        // รักษา parcels เดิมไว้ ไม่ลบทิ้งเมื่อ edit
+        const existingMail = currentEmailsList.find(m => m.id == messageIdToEdit);
+        const existingParcels = existingMail ? existingMail.parcels : [];
+        const parcelStr = existingParcels.length > 0 ? existingParcels.join(PARCEL_SEPARATOR) : '';
+        newUrl = `${EMAIL_PREFIX}${e}${EMAIL_SEPARATOR}${p}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${s}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${conf}${EMAIL_SEPARATOR}${parcelStr}`;
       } else {
         const t = document.getElementById('editMessageInput').value;
         const xt = document.getElementById('editExtraMessageInput').value;
@@ -1700,10 +1696,10 @@
     };
 
     // =============================================
-    // --- PARCEL MANAGEMENT SYSTEM (SUPABASE) ---
+    // --- PARCEL MANAGEMENT SYSTEM (inline in links.url) ---
+    // Format: vault://email|::|pass|::|0|::|status|::|0|::|confirm|::|parcel1|||parcel2|||parcel3
     // =============================================
     let currentParcelEmailId = null;
-    let parcelCache = {}; // cache: emailId -> parcels[]
 
     function openParcelModal(emailId) {
       currentParcelEmailId = emailId;
@@ -1718,28 +1714,34 @@
       currentParcelEmailId = null;
     }
 
-    async function loadParcelFromSupabase(emailId) {
-      try {
-        const { data, error } = await sb.from('parcels').select('*').eq('email_id', emailId).order('created_at', { ascending: true });
-        if (error) throw error;
-        parcelCache[emailId] = data || [];
-        return parcelCache[emailId];
-      } catch(e) {
-        console.error('Load parcel error:', e);
-        return [];
-      }
+    // ดึงข้อมูล email จาก currentEmailsList
+    function getCurrentMailData() {
+      return currentEmailsList.find(m => m.id == currentParcelEmailId);
     }
 
-    function getParcelCache(emailId) {
-      return parcelCache[emailId] || [];
+    // สร้าง url ใหม่จากข้อมูล mail + parcels ใหม่
+    function buildEmailUrl(mail, newParcels) {
+      const parcelStr = newParcels.length > 0 ? newParcels.join(PARCEL_SEPARATOR) : '';
+      return `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.confirmReceived ? '1' : '0'}${EMAIL_SEPARATOR}${parcelStr}`;
     }
 
-    async function renderParcelList() {
+    // บันทึก parcels ลง Supabase (update url)
+    async function saveParcelsToSupabase(mail, newParcels) {
+      const newUrl = buildEmailUrl(mail, newParcels);
+      const { error } = await sb.from('links').update({ url: newUrl }).eq('id', mail.id);
+      if (error) throw error;
+      // อัปเดต local cache
+      mail.parcels = newParcels;
+      mail.hasParcel = newParcels.length > 0;
+      mail.rawUrl = newUrl;
+    }
+
+    function renderParcelList() {
       const container = document.getElementById('parcelListContainer');
-      container.innerHTML = '<div class="parcel-item-empty">กำลังโหลด...</div>';
-      const parcels = await loadParcelFromSupabase(currentParcelEmailId);
+      const mail = getCurrentMailData();
+      const parcels = mail ? mail.parcels : [];
       
-      if (parcels.length === 0) {
+      if (!parcels || parcels.length === 0) {
         container.innerHTML = '<div class="parcel-item-empty">ยังไม่มีเลขพัสดุ</div>';
         return;
       }
@@ -1748,33 +1750,35 @@
         <div class="parcel-item">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
             <span style="font-weight: 600; color: #0f172a;">ชุดที่ ${idx + 1}</span>
-            <button class="parcel-del-btn" data-parcel-id="${parcel.id}" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:0.85rem;padding:2px 6px;border-radius:6px;" title="ลบ">🗑</button>
+            <button class="parcel-del-btn" data-idx="${idx}" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:0.85rem;padding:2px 6px;border-radius:6px;" title="ลบ">🗑</button>
           </div>
-          <div style="white-space:pre-wrap;">${escapeHTML(parcel.tracking_data)}</div>
+          <div style="white-space:pre-wrap;">${escapeHTML(parcel)}</div>
         </div>
       `).join('');
 
       container.querySelectorAll('.parcel-del-btn').forEach(btn => {
         btn.onclick = async () => {
-          const pid = btn.dataset.parcelId;
+          const idx = parseInt(btn.dataset.idx);
           if (!confirm('ลบเลขพัสดุชุดนี้?')) return;
+          const mail = getCurrentMailData();
+          if (!mail) return;
           try {
-            const { error } = await sb.from('parcels').delete().eq('id', pid);
-            if (error) throw error;
-            showToast('ลบแล้ว 🗑️');
-            await renderParcelList();
+            const newParcels = mail.parcels.filter((_, i) => i !== idx);
+            await saveParcelsToSupabase(mail, newParcels);
+            renderParcelList();
             updateParcelButtonColor();
+            showToast('ลบแล้ว 🗑️');
           } catch(e) { alert('ลบไม่สำเร็จ: ' + e.message); }
         };
       });
     }
 
-    async function updateParcelButtonColor() {
+    function updateParcelButtonColor() {
       if (!currentParcelEmailId) return;
-      const parcels = await loadParcelFromSupabase(currentParcelEmailId);
-      const hasParcel = parcels.length > 0;
+      const mail = getCurrentMailData();
+      const hasParcel = mail && mail.parcels && mail.parcels.length > 0;
       const btn = document.querySelector(`.parcel-open-btn[data-email-id="${currentParcelEmailId}"]`);
-      if (btn) btn.classList.toggle('checked-confirm', hasParcel);
+      if (btn) btn.classList.toggle('checked-confirm', !!hasParcel);
     }
 
     async function pasteParcelData() {
@@ -1792,37 +1796,36 @@
         }
         
         const parcelSet = lines.slice(0, 2).join('\n');
-        const existingParcels = await loadParcelFromSupabase(currentParcelEmailId);
+        const mail = getCurrentMailData();
+        if (!mail) return;
         
-        if (existingParcels.some(p => p.tracking_data === parcelSet)) {
+        if (mail.parcels.includes(parcelSet)) {
           alert('เลขพัสดุชุดนี้มีอยู่แล้ว');
           return;
         }
         
-        if (existingParcels.length >= 3) {
+        if (mail.parcels.length >= 3) {
           alert('เกินจำนวนสูงสุด 3 ชุด');
           return;
         }
         
-        const { error } = await sb.from('parcels').insert([{ email_id: currentParcelEmailId, tracking_data: parcelSet }]);
-        if (error) throw error;
+        const newParcels = [...mail.parcels, parcelSet];
+        await saveParcelsToSupabase(mail, newParcels);
+        renderParcelList();
+        updateParcelButtonColor();
         showToast('เพิ่มเลขพัสดุแล้ว ✅');
-        await renderParcelList();
-        await updateParcelButtonColor();
       } catch (err) {
-        if (err.message) alert('เกิดข้อผิดพลาด: ' + err.message);
-        else alert('ไม่สามารถเข้าถึง Clipboard ได้');
+        alert('เกิดข้อผิดพลาด: ' + (err.message || err));
       }
     }
 
-    async function copyAllParcels() {
-      const parcels = await loadParcelFromSupabase(currentParcelEmailId);
-      if (parcels.length === 0) {
+    function copyAllParcels() {
+      const mail = getCurrentMailData();
+      if (!mail || mail.parcels.length === 0) {
         alert('ยังไม่มีเลขพัสดุ');
         return;
       }
-      
-      const text = parcels.map(p => p.tracking_data).join('\n\n');
+      const text = mail.parcels.join('\n\n');
       navigator.clipboard.writeText(text).then(() => {
         showToast('คัดลอกแล้ว ✅');
       }).catch(() => {
@@ -1832,12 +1835,12 @@
 
     async function clearAllParcels() {
       if (!confirm('ต้องการลบเลขพัสดุทั้งหมดใช่หรือไม่?')) return;
+      const mail = getCurrentMailData();
+      if (!mail) return;
       try {
-        const { error } = await sb.from('parcels').delete().eq('email_id', currentParcelEmailId);
-        if (error) throw error;
-        parcelCache[currentParcelEmailId] = [];
-        await renderParcelList();
-        await updateParcelButtonColor();
+        await saveParcelsToSupabase(mail, []);
+        renderParcelList();
+        updateParcelButtonColor();
         showToast('ลบแล้ว 🗑️');
       } catch(e) { alert('ลบไม่สำเร็จ: ' + e.message); }
     }
@@ -1872,7 +1875,6 @@
     initAddressSystem();
     loadData();
     sb.channel('links-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, loadData).subscribe();
-    sb.channel('parcels-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'parcels' }, loadData).subscribe();
 
   </script>
 </body>
