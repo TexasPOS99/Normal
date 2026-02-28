@@ -1405,7 +1405,7 @@
           </div>
           <div class="flex flex-wrap gap-2 pt-4 border-t border-border/50">
             <button class="checkbox-icon parcel-open-btn ${mail.hasParcel ? 'checked-confirm' : ''}" data-email-id="${mail.id}">
-              <span>📦 เลขพัสดุ</span>
+              <span>📦 เลขพัสดุ${mail.parcels && mail.parcels.length > 0 ? ` <span style="font-size:0.75rem;opacity:0.85;">(${mail.parcels.length}/3)</span>` : ''}</span>
             </button>
             <button class="checkbox-icon conf-btn ${mail.confirmReceived ? 'checked-confirm' : ''}">
               <span>🤝 ยืนยัน</span>
@@ -1735,9 +1735,16 @@
       mail.parcels = newParcels;
       mail.hasParcel = newParcels.length > 0;
       mail.rawUrl = newUrl;
-      // อัปเดตสีปุ่มในการ์ดทันที
+      // อัปเดตสีและตัวเลขบนปุ่มในการ์ดทันที
       const cardBtn = document.querySelector(`.parcel-open-btn[data-email-id="${mail.id}"]`);
-      if (cardBtn) cardBtn.classList.toggle('checked-confirm', mail.hasParcel);
+      if (cardBtn) {
+        const count = newParcels.length;
+        cardBtn.classList.toggle('checked-confirm', count > 0);
+        const span = cardBtn.querySelector('span');
+        if (span) {
+          span.innerHTML = `📦 เลขพัสดุ${count > 0 ? ` <span style="font-size:0.75rem;opacity:0.85;">(${count}/3)</span>` : ''}`;
+        }
+      }
     }
 
     function renderParcelList() {
@@ -1780,9 +1787,16 @@
     function updateParcelButtonColor() {
       if (!currentParcelEmailId) return;
       const mail = getCurrentMailData();
-      const hasParcel = mail && mail.parcels && mail.parcels.length > 0;
+      const count = mail && mail.parcels ? mail.parcels.length : 0;
+      const hasParcel = count > 0;
       const btn = document.querySelector(`.parcel-open-btn[data-email-id="${currentParcelEmailId}"]`);
-      if (btn) btn.classList.toggle('checked-confirm', !!hasParcel);
+      if (!btn) return;
+      btn.classList.toggle('checked-confirm', hasParcel);
+      // อัปเดตตัวเลขบนปุ่ม
+      const span = btn.querySelector('span');
+      if (span) {
+        span.innerHTML = `📦 เลขพัสดุ${hasParcel ? ` <span style="font-size:0.75rem;opacity:0.85;">(${count}/3)</span>` : ''}`;
+      }
     }
 
     async function pasteParcelData() {
