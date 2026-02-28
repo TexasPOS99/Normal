@@ -277,6 +277,68 @@
       border-color: #cbd5e1;
     }
 
+    /* Refresh Button */
+    #refreshBtn {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      z-index: 90;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      color: white;
+      font-size: 1.25rem;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      overflow: hidden;
+    }
+    #refreshBtn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55);
+    }
+    #refreshBtn:active {
+      transform: scale(0.95);
+    }
+    #refreshBtn .refresh-icon {
+      display: inline-block;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      line-height: 1;
+    }
+    #refreshBtn.spinning .refresh-icon {
+      animation: spinOnce 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes spinOnce {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    /* Ripple */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.4);
+      transform: scale(0);
+      animation: rippleAnim 0.55s linear;
+      pointer-events: none;
+    }
+    @keyframes rippleAnim {
+      to { transform: scale(3.5); opacity: 0; }
+    }
+    /* Success pulse glow */
+    #refreshBtn.success-glow {
+      animation: successGlow 0.6s ease-out;
+    }
+    @keyframes successGlow {
+      0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      50%  { box-shadow: 0 0 0 14px rgba(16, 185, 129, 0); background: linear-gradient(135deg, #10b981, #059669); }
+      100% { box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4); background: linear-gradient(135deg, #2563eb, #0ea5e9); }
+    }
+
     /* Mobile optimization for buttons and inputs */
     @media (max-width: 640px) {
       .btn-base {
@@ -306,6 +368,11 @@
 <body>
   <canvas class="matrix-bg" id="matrixCanvas"></canvas>
   <div id="toast" class="fixed bottom-5 right-5 text-white py-3 px-6 rounded-xl shadow-2xl opacity-0 transform translate-y-10 z-50 transition-all duration-300 font-heading" style="background: linear-gradient(135deg, #2563eb, #0ea5e9);">คัดลอกข้อความแล้ว!</div>
+
+  <!-- Refresh Button -->
+  <button id="refreshBtn" title="รีเฟรชข้อมูล">
+    <span class="refresh-icon">🔄</span>
+  </button>
 
   <!-- Parcel Modal -->
   <div id="parcelModal" class="parcel-modal-backdrop">
@@ -1898,6 +1965,52 @@
         emailFormContent.classList.toggle('expanded');
       };
     }
+
+    // =============================================
+    // --- REFRESH BUTTON ---
+    // =============================================
+    (function() {
+      const btn = document.getElementById('refreshBtn');
+      let isRefreshing = false;
+
+      btn.addEventListener('click', async function(e) {
+        if (isRefreshing) return;
+        isRefreshing = true;
+
+        // Ripple effect
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple';
+        const size = Math.max(btn.offsetWidth, btn.offsetHeight);
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = (e.offsetX - size / 2) + 'px';
+        ripple.style.top  = (e.offsetY - size / 2) + 'px';
+        btn.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+
+        // Spin icon
+        btn.classList.add('spinning');
+
+        try {
+          await loadData();
+          // Success glow (green flash)
+          btn.classList.remove('spinning');
+          btn.classList.add('success-glow');
+          showToast('อัปเดตข้อมูลแล้ว ✅');
+          setTimeout(() => btn.classList.remove('success-glow'), 700);
+        } catch(err) {
+          btn.classList.remove('spinning');
+          showToast('โหลดไม่สำเร็จ ⚠️');
+        } finally {
+          // รอให้ animation จบก่อนอนุญาตกดซ้ำ
+          setTimeout(() => { isRefreshing = false; }, 800);
+        }
+      });
+
+      // ลบ animation class เมื่อ spin จบ
+      btn.addEventListener('animationend', function(e) {
+        if (e.animationName === 'spinOnce') btn.classList.remove('spinning');
+      });
+    })();
 
     // =============================================
     // --- INIT ---
