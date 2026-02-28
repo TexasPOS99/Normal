@@ -124,6 +124,159 @@
       transform: rotate(180deg);
     }
 
+    /* Parcel Modal Styles */
+    .parcel-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .parcel-modal-backdrop.active {
+      display: flex;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .parcel-modal-content {
+      background: white;
+      border-radius: 24px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .parcel-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .parcel-modal-header h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .parcel-modal-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #94a3b8;
+      transition: color 0.2s ease;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .parcel-modal-close-btn:hover {
+      color: #0f172a;
+    }
+    .parcel-list-container {
+      background: #f8fafc;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+      min-height: 120px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .parcel-item {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: #475569;
+      font-family: 'Kanit', sans-serif;
+    }
+    .parcel-item:last-child {
+      margin-bottom: 0;
+    }
+    .parcel-item-empty {
+      text-align: center;
+      color: #94a3b8;
+      padding: 24px 16px;
+      font-size: 0.875rem;
+    }
+    .parcel-button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .parcel-button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .parcel-btn {
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Kanit', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .parcel-btn-paste {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      grid-column: 1 / -1;
+    }
+    .parcel-btn-paste:hover {
+      background: linear-gradient(135deg, #059669, #047857);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+    }
+    .parcel-btn-copy {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+    }
+    .parcel-btn-copy:hover {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+    }
+    .parcel-btn-clear {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    .parcel-btn-clear:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+    .parcel-btn-close {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    .parcel-btn-close:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+
     /* Mobile optimization for buttons and inputs */
     @media (max-width: 640px) {
       .btn-base {
@@ -140,12 +293,42 @@
         padding: 0.75rem 0.25rem;
         font-size: 0.8rem;
       }
+      .parcel-modal-content {
+        width: 95vw;
+        padding: 16px;
+      }
+      .parcel-button-row {
+        grid-template-columns: 1fr 1fr;
+      }
     }
   </style>
 </head>
 <body>
   <canvas class="matrix-bg" id="matrixCanvas"></canvas>
   <div id="toast" class="fixed bottom-5 right-5 text-white py-3 px-6 rounded-xl shadow-2xl opacity-0 transform translate-y-10 z-50 transition-all duration-300 font-heading" style="background: linear-gradient(135deg, #2563eb, #0ea5e9);">คัดลอกข้อความแล้ว!</div>
+
+  <!-- Parcel Modal -->
+  <div id="parcelModal" class="parcel-modal-backdrop">
+    <div class="parcel-modal-content">
+      <div class="parcel-modal-header">
+        <h3>📦 เลขพัสดุ</h3>
+        <button class="parcel-modal-close-btn" id="parcelModalCloseBtn">✕</button>
+      </div>
+      
+      <div class="parcel-list-container" id="parcelListContainer">
+        <div class="parcel-item-empty">ยังไม่มีเลขพัสดุ</div>
+      </div>
+      
+      <div class="parcel-button-group">
+        <button class="parcel-btn parcel-btn-paste" id="parcelPasteBtn">📥 วางด่วน</button>
+        <div class="parcel-button-row">
+          <button class="parcel-btn parcel-btn-copy" id="parcelCopyAllBtn">📋 คัดลอกทั้งหมด</button>
+          <button class="parcel-btn parcel-btn-clear" id="parcelClearBtn">🗑 ลบทั้งหมด</button>
+        </div>
+        <button class="parcel-btn parcel-btn-close" id="parcelCloseBtn">❌ ปิด</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Confirm Delete Modal (Board/Email) -->
   <div id="confirmModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden modal-backdrop">
@@ -1220,8 +1403,11 @@
             <button class="btn-base btn-secondary py-2 text-xs copy-pass-btn">🔑 รหัส</button>
           </div>
           <div class="flex flex-wrap gap-2 pt-4 border-t border-border/50">
-            <button class="checkbox-icon pkg-btn ${mail.packageReceived ? 'checked-package' : ''}">
+            <button class="checkbox-icon parcel-open-btn" data-email-id="${mail.id}">
               <span>📦 เลขพัสดุ</span>
+            </button>
+            <button class="checkbox-icon pkg-btn ${mail.packageReceived ? 'checked-package' : ''}">
+              <span>📦 ได้รับเลข</span>
             </button>
             <button class="checkbox-icon conf-btn ${mail.confirmReceived ? 'checked-confirm' : ''}">
               <span>🤝 ยืนยัน</span>
@@ -1238,8 +1424,10 @@
           passText.textContent = isHidden ? mail.password : '••••••••';
           e.target.textContent = isHidden ? '🙈' : '👁️';
         };
+        const parcelBtn = div.querySelector('.parcel-open-btn');
         const pkgBtn = div.querySelector('.pkg-btn');
         const confBtn = div.querySelector('.conf-btn');
+        if (parcelBtn) parcelBtn.onclick = (e) => { e.preventDefault(); openParcelModal(mail.id); };
         if (pkgBtn) pkgBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.packageReceived; try { await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}${ns ? '1' : '0'}${EMAIL_SEPARATOR}${mail.confirmReceived ? '1' : '0'}` }).eq('id', mail.id); mail.packageReceived = ns; pkgBtn.classList.toggle('checked-package', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
         if (confBtn) confBtn.onclick = async (e) => { e.preventDefault(); const ns = !mail.confirmReceived; try { await sb.from('links').update({ url: `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}${mail.packageReceived ? '1' : '0'}${EMAIL_SEPARATOR}${ns ? '1' : '0'}` }).eq('id', mail.id); mail.confirmReceived = ns; confBtn.classList.toggle('checked-confirm', ns); showToast(ns ? 'OK' : 'Undo'); } catch(err) { alert('Error'); } };
         container.appendChild(div);
@@ -1515,6 +1703,126 @@
       if (val < min) val = min;
       if (val > max) val = max;
       input.value = val;
+    };
+
+    // =============================================
+    // --- PARCEL MANAGEMENT SYSTEM ---
+    // =============================================
+    let currentParcelEmailId = null;
+    const PARCEL_STORAGE_PREFIX = 'parcel_';
+
+    function openParcelModal(emailId) {
+      currentParcelEmailId = emailId;
+      const modal = document.getElementById('parcelModal');
+      modal.classList.add('active');
+      renderParcelList();
+    }
+
+    function closeParcelModal() {
+      const modal = document.getElementById('parcelModal');
+      modal.classList.remove('active');
+      currentParcelEmailId = null;
+    }
+
+    function getParcelData() {
+      if (!currentParcelEmailId) return [];
+      const key = PARCEL_STORAGE_PREFIX + currentParcelEmailId;
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : [];
+    }
+
+    function saveParcelData(parcels) {
+      if (!currentParcelEmailId) return;
+      const key = PARCEL_STORAGE_PREFIX + currentParcelEmailId;
+      localStorage.setItem(key, JSON.stringify(parcels));
+    }
+
+    function renderParcelList() {
+      const container = document.getElementById('parcelListContainer');
+      const parcels = getParcelData();
+      
+      if (parcels.length === 0) {
+        container.innerHTML = '<div class="parcel-item-empty">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e40\u0e25\u0e02\u0e1e\u0e31\u0e2a\u0e14\u0e38</div>';
+        return;
+      }
+      
+      container.innerHTML = parcels.map((parcel, idx) => `
+        <div class="parcel-item">
+          <div style="font-weight: 600; color: #0f172a; margin-bottom: 4px;">\u0e0a\u0e38\u0e14\u0e17\u0e35\u0e48 ${idx + 1}</div>
+          <div>${escapeHTML(parcel)}</div>
+        </div>
+      `).join('');
+    }
+
+    async function pasteParcelData() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (!text.trim()) {
+          alert('Clipboard \u0e27\u0e48\u0e32\u0e07\u0e40\u0e1b\u0e25\u0e48\u0e32');
+          return;
+        }
+        
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length < 2) {
+          alert('\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a\u0e15\u0e49\u0e2d\u0e07\u0e21\u0e35\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e19\u0e49\u0e2d\u0e22 2 \u0e1a\u0e23\u0e23\u0e17\u0e31\u0e14');
+          return;
+        }
+        
+        const parcelSet = lines.slice(0, 2).join('\n');
+        let parcels = getParcelData();
+        
+        if (parcels.includes(parcelSet)) {
+          alert('\u0e40\u0e25\u0e02\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e0a\u0e38\u0e14\u0e19\u0e35\u0e49\u0e21\u0e35\u0e2d\u0e22\u0e39\u0e48\u0e41\u0e25\u0e49\u0e27');
+          return;
+        }
+        
+        if (parcels.length >= 3) {
+          alert('\u0e40\u0e01\u0e34\u0e19\u0e08\u0e33\u0e19\u0e27\u0e19\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14 3 \u0e0a\u0e38\u0e14');
+          return;
+        }
+        
+        parcels.push(parcelSet);
+        saveParcelData(parcels);
+        renderParcelList();
+        showToast('\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e40\u0e25\u0e02\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e41\u0e25\u0e49\u0e27 \u2705');
+      } catch (err) {
+        alert('\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07 Clipboard \u0e44\u0e14\u0e49');
+      }
+    }
+
+    function copyAllParcels() {
+      const parcels = getParcelData();
+      if (parcels.length === 0) {
+        alert('\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e40\u0e25\u0e02\u0e1e\u0e31\u0e2a\u0e14\u0e38');
+        return;
+      }
+      
+      const text = parcels.join('\n\n');
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e41\u0e25\u0e49\u0e27 \u2705');
+      }).catch(() => {
+        alert('\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e44\u0e14\u0e49');
+      });
+    }
+
+    function clearAllParcels() {
+      if (confirm('\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e40\u0e25\u0e02\u0e1e\u0e31\u0e2a\u0e14\u0e38\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e43\u0e0a\u0e48\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?')) {
+        saveParcelData([]);
+        renderParcelList();
+        showToast('\u0e25\u0e1a\u0e41\u0e25\u0e49\u0e27 \ud83d\uddd1\ufe0f');
+      }
+    }
+
+    document.getElementById('parcelModalCloseBtn').onclick = closeParcelModal;
+    document.getElementById('parcelCloseBtn').onclick = closeParcelModal;
+    document.getElementById('parcelPasteBtn').onclick = pasteParcelData;
+    document.getElementById('parcelCopyAllBtn').onclick = copyAllParcels;
+    document.getElementById('parcelClearBtn').onclick = clearAllParcels;
+    
+    document.getElementById('parcelModal').onclick = (e) => {
+      if (e.target === document.getElementById('parcelModal')) {
+        closeParcelModal();
+      }
     };
 
     // =============================================
