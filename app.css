@@ -441,3 +441,13 @@ pre#resultDisplay {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.email-timestamp {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  font-size: 0.7rem; /* Smaller font size */
+  color: var(--text-hint); /* Muted color */
+  opacity: 0.8; /* Slightly transparent */
+  font-family: 'Sarabun', sans-serif;
+}

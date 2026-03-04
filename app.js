@@ -90,6 +90,28 @@ function showToast(msg = 'คัดลอกข้อความแล้ว!')
   }, 2000);
 }
 
+function formatTimeAgo(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffSeconds = Math.floor((now - date) / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} นาทีที่แล้ว`;
+  } else if (diffHours < 24) {
+    return `${diffHours} ชั่วโมงที่แล้ว`;
+  } else {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}-${month}-${year} ${hours}:${minutes}`;
+  }
+}
+
 function escapeHTML(str) {
   if (!str) return '';
   return str.replace(/[&<>"']/g, m => ({
@@ -735,6 +757,7 @@ function renderEmails(emails) {
           <span>🤝 ยืนยัน</span>
         </button>
       </div>
+      <div class="email-timestamp text-hint text-xs mt-3 text-right">${formatTimeAgo(mail.created_at)}</div>
     `;
     div.querySelector('.copy-email-btn').onclick = (e) => copyTextToClipboard(mail.email, e.target);
     div.querySelector('.copy-pass-btn').onclick = (e) => copyTextToClipboard(mail.password, e.target);
