@@ -1317,3 +1317,20 @@ if (emailFormTrigger && emailFormContent) {
 initAddressSystem();
 loadData();
 sb.channel('links-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, loadData).subscribe();
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('https://ipapi.co/json/')
+    .then(response => response.json())
+    .then(data => {
+      const ipInfo = document.getElementById('ip-info');
+      if (data.ip && data.country_name) {
+        ipInfo.innerHTML = `IP: ${data.ip} <span class="font-bold">(${data.country_name})</span>`;
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching IP info:', error);
+      const ipInfo = document.getElementById('ip-info');
+      ipInfo.textContent = 'ไม่สามารถโหลดข้อมูล IP ได้';
+    });
+});
