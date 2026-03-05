@@ -676,7 +676,17 @@ function renderMessages(messages) {
 }
 
 function renderEmails(emails) {
+  // Null check: ถ้า emails ไม่ได้รับค่า ให้ใช้ currentEmailsList แทน
+  if (!emails || !Array.isArray(emails)) {
+    emails = currentEmailsList;
+  }
+  
   const container = document.getElementById('email-container');
+  if (!container) {
+    console.error('Email container not found');
+    return;
+  }
+  
   container.innerHTML = '';
   const filterPending = document.getElementById('filterPendingCheckbox').checked;
   const searchTerm = document.getElementById('searchEmailInput').value.toLowerCase();
@@ -1096,21 +1106,32 @@ function buildEmailUrl(mail, newParcels) {
 
 // บันทึก parcels ลง Supabase (update url)
 async function saveParcelsToSupabase(mail, newParcels) {
-  const newUrl = buildEmailUrl(mail, newParcels);
-  const { error } = await sb.from('links').update({ url: newUrl }).eq('id', mail.id);
-  if (error) {
-    console.error('Error updating Supabase:', error);
-    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูลพัสดุ');
-    return;
-  }
-  // Update local cache immediately
-  mail.parcels = newParcels;
-  mail.hasParcel = newParcels.length > 0;
-  mail.status = newParcels.length > 0 ? '2' : '1'; // Also update status in local cache
-  mail.rawUrl = newUrl;
+  try {
+    if (!mail || !mail.id) {
+      console.error('Invalid mail object:', mail);
+      alert('ข้อมูลอีเมลไม่ถูกต้อง');
+      return;
+    }
+    
+    const newUrl = buildEmailUrl(mail, newParcels);
+    const { error } = await sb.from('links').update({ url: newUrl }).eq('id', mail.id);
+    
+    if (error) {
+      console.error('Error updating Supabase:', error);
+      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูลพัสดุ');
+      return;
+    }
+    
+    mail.parcels = newParcels;
+    mail.hasParcel = newParcels.length > 0;
+    mail.status = newParcels.length > 0 ? '2' : '1';
+    mail.rawUrl = newUrl;
 
-  // Re-render the entire email list to reflect all changes
-  renderEmails();
+    renderEmails(currentEmailsList);
+  } catch (err) {
+    console.error('Unexpected error in saveParcelsToSupabase:', err);
+    alert('เกิดข้อผิดพลาดไม่คาดหมาย');
+  }
 }
 
 function renderParcelList() {
