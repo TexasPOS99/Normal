@@ -1086,35 +1086,35 @@ function getCurrentMailData() {
   return currentEmailsList.find(m => m.id == currentParcelEmailId);
 }
 
-// สร้าง url ใหม่จากข้อมูล mail + parcels ใหม่
 function buildEmailUrl(mail, newParcels) {
   const parcelStr = newParcels.length > 0 ? newParcels.join(PARCEL_SEPARATOR) : '';
-  return `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.status}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.confirmReceived ? '1' : '0'}${EMAIL_SEPARATOR}${parcelStr}`;
+  // อัปเดตสถานะอัตโนมัติ: ถ้ามีเลขพัสดุให้เป็น '2' (ใช้งานแล้ว), ถ้าไม่มีให้เป็น '1' (รอใช้งาน)
+  const newStatus = newParcels.length > 0 ? '2' : '1';
+  mail.status = newStatus;
+  return `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${newStatus}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.confirmReceived ? '1' : '0'}${EMAIL_SEPARATOR}${parcelStr}`;
 }
 
 // บันทึก parcels ลง Supabase (update url)
 async function saveParcelsToSupabase(mail, newParcels) {
   const newUrl = buildEmailUrl(mail, newParcels);
   const { error } = await sb.from('links').update({ url: newUrl }).eq('id', mail.id);
-  if (error) throw error;
-  // อัปเดต local cache ทันที (ไม่ต้องรอ Realtime)
+  if (error) {
+    console.error('Error updating Supabase:', error);
+    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูลพัสดุ');
+    return;
+  }
+  // Update local cache immediately
   mail.parcels = newParcels;
   mail.hasParcel = newParcels.length > 0;
+  mail.status = newParcels.length > 0 ? '2' : '1'; // Also update status in local cache
   mail.rawUrl = newUrl;
-  // อัปเดตสีและตัวเลขบนปุ่มในการ์ดทันที
-  const cardBtn = document.querySelector(`.parcel-open-btn[data-email-id="${mail.id}"]`);
-  if (cardBtn) {
-    const count = newParcels.length;
-    cardBtn.classList.toggle('checked-confirm', count > 0);
-    const span = cardBtn.querySelector('span');
-    if (span) {
-      span.innerHTML = `📦 เลขพัสดุ${count > 0 ? ` <span style="font-size:0.75rem;opacity:0.85;">(${count}/3)</span>` : ''}`;
-    }
-  }
+
+  // Re-render the entire email list to reflect all changes
+  renderEmails();
 }
 
 function renderParcelList() {
-  const container = document.getElementById('parcelListContainer');
+  const container = document.getElementById("parcelListContainer");
   const mail = getCurrentMailData();
   const parcels = mail ? mail.parcels : [];
 
