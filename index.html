@@ -107,6 +107,13 @@
           </div>
         </div>
 
+        <div id="editQuickNoteContainer" class="hidden space-y-4">
+          <div>
+            <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">Quick Note</label>
+            <textarea id="editQuickNoteInput" rows="6" class="input-premium" placeholder="ใส่บันทึกด่วนที่นี่..." style="max-height: 400px;"></textarea>
+          </div>
+        </div>
+
         <div id="editEmailContainer" class="hidden space-y-4">
           <div>
             <label class="block font-heading mb-2" style="color: #475569; font-size: 0.875rem;">อีเมล / Username</label>
@@ -221,6 +228,19 @@
       </nav>
     </header>
 
+    <!-- Quick Note Section -->
+    <div id="quicknote-container" class="card-premium mb-6 border-l-4" style="border-left-color: var(--accent); padding: 1rem;">
+      <div class="flex justify-between items-start gap-3">
+        <div class="flex-1">
+          <h3 class="font-heading text-base mb-1 flex items-center gap-2">📌 Quick Note</h3>
+          <div id="quickNoteContent" class="text-xs leading-relaxed" style="color: var(--text-main); white-space: pre-wrap; word-break: break-word; max-height: 120px; overflow-y: auto;">
+            (กรุณารอสักครู่...)
+          </div>
+        </div>
+        <button id="quickNoteEditBtn" class="btn-base btn-primary" style="width: auto; padding: 0.375rem 0.75rem; font-size: 0.8rem; white-space: nowrap; flex-shrink: 0;">✏️ แก้ไข</button>
+      </div>
+    </div>
+
     <main>
       <!-- Camouflage Tab -->
       <section id="camouflage-tab" class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
@@ -237,7 +257,7 @@
           <div class="space-y-3 relative">
             <label class="block text-hint font-heading">📍 ค้นหาที่อยู่ที่บันทึกไว้</label>
             <div class="relative">
-              <input type="text" id="addressSearchInput" class="input-premium pr-10" placeholder="พิมพ์ชื่อ หรือ ที่อยู่เพื่อค้นหา...">
+              <input type="text" id="addressSearchInput" class="input-premium pr-10" placeholder="พิมพ์ชื่อ หรือ ที่อยู่เพื่อค้นหา..." autocomplete="off">
               <div class="absolute right-3 top-1/2 -translate-y-1/2 text-hint pointer-events-none">🔍</div>
             </div>
             <!-- Smart Search Results Dropdown -->
@@ -302,7 +322,10 @@
         </div>
 
         <div class="card-premium">
-          <h3 class="font-heading text-lg mb-6 flex items-center gap-2">⚡ ตั้งค่าความหนาแน่น</h3>
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="font-heading text-lg flex items-center gap-2">⚡ ตั้งค่าความหนาแน่น</h3>
+            <button class="btn-base btn-secondary" style="width: auto; padding: 0.5rem 1rem; font-size: 0.875rem;" onclick="randomizeValues()">🎲 สุ่ม</button>
+          </div>
 
           <div class="space-y-6">
             <!-- สระ/วรรณยุกต์หลอก -->
@@ -313,7 +336,7 @@
               </label>
               <div class="flex items-center gap-1 bg-bg-input p-1 rounded-xl border border-border">
                 <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numFake', -1)">-</button>
-                <input type="number" id="numFake" value="3" min="1" max="20" class="w-10 bg-transparent border-none text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                <input type="number" id="numFake" value="4" min="4" max="15" class="w-10 bg-transparent border-none text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none\">
                 <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numFake', 1)">+</button>
               </div>
             </div>
@@ -326,7 +349,7 @@
               </label>
               <div class="flex items-center gap-1 bg-bg-input p-1 rounded-xl border border-border">
                 <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numInvisible', -1)">-</button>
-                <input type="number" id="numInvisible" value="5" min="1" max="50" class="w-10 bg-transparent border-none text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                <input type="number" id="numInvisible" value="5" min="5" max="15" class="w-10 bg-transparent border-none text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
                 <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numInvisible', 1)">+</button>
               </div>
             </div>
@@ -339,7 +362,7 @@
               </label>
               <div class="flex items-center gap-1 bg-bg-input p-1 rounded-xl border border-border">
                 <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numSpace', -1)">-</button>
-                <input type="number" id="numSpace" value="2" min="1" max="20" class="w-10 bg-transparent border-none text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                <input type="number" id="numSpace" value="2" min="2" max="6" class="w-10 bg-transparent border-none text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
                 <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white transition-colors text-primary font-bold" onclick="adjustValue('numSpace', 1)">+</button>
               </div>
             </div>

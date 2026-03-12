@@ -427,11 +427,6 @@ pre#resultDisplay {
     padding: 1rem;
   }
 
-  .tab-item {
-    padding: 0.75rem 0.25rem;
-    font-size: 0.8rem;
-  }
-
   .parcel-modal-content {
     width: 95vw;
     padding: 16px;

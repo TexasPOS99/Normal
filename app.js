@@ -64,6 +64,7 @@ const SUPABASE_URL = "https://uromhoezcxkhilxchxxe.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVyb21ob2V6Y3hraGlseGNoeHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjEyOTUsImV4cCI6MjA2ODY5NzI5NX0.UDABYee8_JDlZHkKGzz6bQG0v95H86uLAP6WIN75Y7o";
 const EMAIL_PREFIX = "vault://";
 const ADDR_PREFIX = "addr://";
+const QUICKNOTE_PREFIX = "quicknote://";
 const EMAIL_SEPARATOR = "|::|";
 const PARCEL_SEPARATOR = "\u2295\u2295\u2295"; // ⊕⊕⊕ ไม่ชนกับ |||EXTRA||| ใน messages
 
@@ -76,7 +77,10 @@ let boardDisplayCount = 10;
 let messageIdToDelete = null;
 let messageIdToEdit = null;
 let isEditingEmailMode = false;
+let isEditingQuickNoteMode = false;
 let addressIdToDelete = null;
+let quickNoteId = null;
+let quickNoteText = "";
 
 // Toast Function
 function showToast(msg = 'คัดลอกข้อความแล้ว!') {
@@ -142,8 +146,99 @@ document.querySelectorAll('.tab-item').forEach(btn => {
     ['camouflage', 'board', 'email'].forEach(t => {
       document.getElementById(t + '-tab').classList.toggle('hidden', t !== tab);
     });
+    // Show/hide Quick Note only on camouflage tab
+    const quickNoteContainer = document.getElementById('quicknote-container');
+    if (quickNoteContainer) {
+      quickNoteContainer.classList.toggle('hidden', tab !== 'camouflage');
+    }
   };
 });
+
+// =============================================
+// --- QUICK NOTE SYSTEM ---
+// =============================================
+function renderQuickNote(text) {
+  const content = document.getElementById('quickNoteContent');
+  if (!text || text.trim() === '') {
+    content.textContent = '(บันทึกว่างเปล่า - กดแก้ไขเพื่อเพิ่มข้อความ)';
+    content.style.color = 'var(--text-hint)';
+    content.style.fontStyle = 'italic';
+  } else {
+    content.textContent = text;
+    content.style.color = 'var(--text-main)';
+    content.style.fontStyle = 'normal';
+  }
+}
+
+function openQuickNoteEditModal() {
+  isEditingQuickNoteMode = true;
+  messageIdToEdit = quickNoteId; // เก็บ ID สำหรับการบันทึก
+  
+  // ซ่อน containers อื่น
+  document.getElementById('editMessageContainer').classList.add('hidden');
+  document.getElementById('editEmailContainer').classList.add('hidden');
+  document.getElementById('editAddressContainer').classList.add('hidden');
+  document.getElementById('editQuickNoteContainer').classList.remove('hidden');
+  
+  document.getElementById('editTitleInput').value = 'Quick Note'; // ไม่ต้องแก้ไขหัวข้อ
+  document.getElementById('editQuickNoteInput').value = quickNoteText || '';
+  document.getElementById('editModal').classList.remove('hidden');
+}
+
+async function ensureQuickNoteExists() {
+  // ถ้าไม่มี quick note ID แล้ว ให้สร้างตัวใหม่
+  if (!quickNoteId) {
+    try {
+      const { data, error } = await sb.from('links').insert([
+        {
+          title: 'Quick Note',
+          url: QUICKNOTE_PREFIX,
+          is_pinned: false
+        }
+      ]).select();
+      
+      if (error) {
+        console.error('Error creating quick note:', error);
+        return;
+      }
+      
+      if (data && data[0]) {
+        quickNoteId = data[0].id;
+        quickNoteText = '';
+      }
+    } catch (err) {
+      console.error('Exception creating quick note:', err);
+    }
+  }
+}
+
+async function saveQuickNote(text) {
+  if (!quickNoteId) {
+    await ensureQuickNoteExists();
+  }
+  
+  if (!quickNoteId) return;
+  
+  try {
+    const url = QUICKNOTE_PREFIX + (text || '');
+    const { error } = await sb.from('links')
+      .update({ url: url })
+      .eq('id', quickNoteId);
+    
+    if (error) {
+      console.error('Error saving quick note:', error);
+      showToast('❌ ไม่สามารถบันทึก');
+      return;
+    }
+    
+    quickNoteText = text;
+    renderQuickNote(text);
+    showToast('✅ บันทึกสำเร็จ');
+  } catch (err) {
+    console.error('Exception saving quick note:', err);
+    showToast('❌ เกิดข้อผิดพลาด');
+  }
+}
 
 // =============================================
 // --- ADDRESS SYSTEM (SUPABASE) ---
@@ -198,6 +293,12 @@ function initAddressSystem() {
 
       document.getElementById('newAddressName').value = '';
       document.getElementById('newAddressFull').value = '';
+      
+      // Clear search input and results
+      document.getElementById('addressSearchInput').value = '';
+      renderSearchResults(''); // Reset search results to empty
+      document.getElementById('addressSearchResults').classList.add('hidden');
+      
       showToast('บันทึกที่อยู่ใหม่แล้ว ✅');
     } catch (e) {
       alert('บันทึกไม่สำเร็จ: ' + e.message);
@@ -518,6 +619,8 @@ function renderAddressList(addresses) {
     });
 
     document.getElementById('resultModal').classList.remove('hidden');
+    // Auto-clear input after successful generation
+    document.getElementById('inputArea').value = '';
   }
 
   document.getElementById('btnGenerate').addEventListener('click', generateCamouflage);
@@ -563,6 +666,11 @@ async function loadData() {
       item.parcels = parcelRaw ? parcelRaw.split(PARCEL_SEPARATOR).filter(p => p.trim()) : [];
       item.hasParcel = item.parcels.length > 0;
       emails.push(item);
+    } else if (item.rawUrl.startsWith(QUICKNOTE_PREFIX)) {
+      // Quick Note
+      quickNoteId = item.id;
+      quickNoteText = item.rawUrl.replace(QUICKNOTE_PREFIX, '');
+      renderQuickNote(quickNoteText);
     } else if (item.rawUrl.startsWith(ADDR_PREFIX)) {
       const content = item.rawUrl.replace(ADDR_PREFIX, '');
       const parts = content.split(EMAIL_SEPARATOR);
@@ -996,10 +1104,23 @@ function openEditModal(id, currentTitle, currentText, isEmail = false, emailVal 
 document.getElementById('editCancelBtn').onclick = () => {
   document.getElementById('editModal').classList.add('hidden');
   messageIdToEdit = null;
+  isEditingQuickNoteMode = false;
+  isEditingEmailMode = false;
 };
 
 document.getElementById('editSaveBtn').onclick = async () => {
   if (!messageIdToEdit) return;
+  
+  // ตรวจสอบว่าเป็นการแก้ไข Quick Note หรือไม่
+  if (isEditingQuickNoteMode) {
+    const text = document.getElementById('editQuickNoteInput').value;
+    await saveQuickNote(text);
+    document.getElementById('editModal').classList.add('hidden');
+    messageIdToEdit = null;
+    isEditingQuickNoteMode = false;
+    return;
+  }
+  
   const newTitle = document.getElementById('editTitleInput').value;
   let newUrl = '';
 
@@ -1047,7 +1168,17 @@ document.getElementById('editSaveBtn').onclick = async () => {
 document.getElementById('edit-confirm-label').addEventListener('click', () => {
   const cb = document.getElementById('edit-confirm-checkbox');
   const label = document.getElementById('edit-confirm-label');
-  setTimeout(() => { label.classList.toggle('checked-confirm', cb.checked); }, 0);
+  setTimeout(() => { 
+    label.classList.toggle('checked-confirm', cb.checked);
+    
+    // Auto-set status to '2' (green/success) when confirm is checked
+    if (cb.checked) {
+      const statusRadio = document.querySelector('input[name="edit-email-status"][value="2"]');
+      if (statusRadio) {
+        statusRadio.checked = true;
+      }
+    }
+  }, 0);
 });
 
 document.querySelectorAll('.edit-addr-type-label').forEach(label => {
@@ -1070,6 +1201,23 @@ window.adjustValue = function (id, delta) {
   if (val < min) val = min;
   if (val > max) val = max;
   input.value = val;
+};
+
+// Randomize values for camouflage settings
+window.randomizeValues = function () {
+  // numFake: ต่ำสุด 4, สูงสุด 15
+  const randomFake = Math.floor(Math.random() * (15 - 4 + 1)) + 4;
+  document.getElementById('numFake').value = randomFake;
+  
+  // numInvisible: ต่ำสุด 5, สูงสุด 15
+  const randomInvisible = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
+  document.getElementById('numInvisible').value = randomInvisible;
+  
+  // numSpace: ต่ำสุด 2, สูงสุด 6
+  const randomSpace = Math.floor(Math.random() * (6 - 2 + 1)) + 2;
+  document.getElementById('numSpace').value = randomSpace;
+  
+  showToast('🎲 สุ่มค่าใหม่แล้ว!');
 };
 
 // =============================================
@@ -1186,10 +1334,48 @@ function updateParcelButtonColor() {
   }
 }
 
+// Helper: Copy to clipboard with fallback (returns Promise)
+function copyToClipboardWithFallback(text) {
+  return new Promise((resolve) => {
+    navigator.clipboard.writeText(text).then(() => {
+      resolve(true);
+    }).catch(() => {
+      // Fallback: ใช้ textarea + execCommand
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        resolve(true);
+      } catch (e) {
+        document.body.removeChild(textarea);
+        resolve(false);
+      }
+    });
+  });
+}
+
+// Helper: Read from clipboard with fallback (รับข้อมูลจาก input)
+async function pasteFromClipboardOrPrompt() {
+  try {
+    // ลองใช้ Clipboard API ก่อน
+    const text = await navigator.clipboard.readText();
+    return text;
+  } catch (err) {
+    // Fallback: ให้ user paste ผ่าน prompt
+    const text = prompt('วาง (Paste) เลขพัสดุที่นี่:');
+    return text || null; // return null ถ้า cancel
+  }
+}
+
 async function pasteParcelData() {
   try {
-    const text = await navigator.clipboard.readText();
-    if (!text.trim()) {
+    const text = await pasteFromClipboardOrPrompt();
+    if (!text || !text.trim()) {
       alert('Clipboard ว่างเปล่า');
       return;
     }
@@ -1232,7 +1418,7 @@ async function pasteParcelData() {
       pasteBtn.disabled = false;
     }
   } catch (err) {
-    alert('ไม่สามารถเข้าถึง Clipboard ได้');
+    alert('เกิดข้อผิดพลาด: ' + err);
   }
 }
 
@@ -1243,10 +1429,12 @@ function copyAllParcels() {
     return;
   }
   const text = mail.parcels.join('\n\n');
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('คัดลอกแล้ว ✅');
-  }).catch(() => {
-    alert('ไม่สามารถคัดลอกได้');
+  copyToClipboardWithFallback(text).then((success) => {
+    if (success) {
+      showToast('คัดลอกแล้ว ✅');
+    } else {
+      alert('ไม่สามารถคัดลอกได้');
+    }
   });
 }
 
@@ -1277,6 +1465,12 @@ document.getElementById('parcelModal').onclick = (e) => {
 // =============================================
 // --- COLLAPSIBLE SYSTEM ---
 // =============================================
+// Quick Note Edit Button
+document.getElementById('quickNoteEditBtn').addEventListener('click', async () => {
+  await ensureQuickNoteExists();
+  openQuickNoteEditModal();
+});
+
 const emailFormTrigger = document.getElementById('emailFormTrigger');
 const emailFormContent = document.getElementById('emailFormContent');
 if (emailFormTrigger && emailFormContent) {
@@ -1336,8 +1530,11 @@ if (emailFormTrigger && emailFormContent) {
 // --- INIT ---
 // =============================================
 initAddressSystem();
-loadData();
-sb.channel('links-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, loadData).subscribe();
+(async () => {
+  await loadData();
+  await ensureQuickNoteExists();
+  sb.channel('links-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, loadData).subscribe();
+})();
 
 
 document.addEventListener('DOMContentLoaded', () => {
