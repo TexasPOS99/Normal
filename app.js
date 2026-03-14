@@ -81,6 +81,7 @@ let isEditingQuickNoteMode = false;
 let addressIdToDelete = null;
 let quickNoteId = null;
 let quickNoteText = "";
+let emailSortOrder = 'newest'; // 'newest' or 'oldest'
 
 // Toast Function
 function showToast(msg = 'คัดลอกข้อความแล้ว!') {
@@ -638,70 +639,86 @@ function renderAddressList(addresses) {
 // --- REALTIME & DATA LOADING ---
 // =============================================
 async function loadData() {
-  const { data, error } = await sb.from('links').select('*').order('created_at', { ascending: true });
-  if (error) return;
-
-  const emails = [];
-  const messages = [];
-  const addresses = [];
-
-  data.forEach(row => {
-    const item = {
-      id: row.id,
-      title: row.title || '',
-      rawUrl: row.url || '',
-      isPinned: !!row.is_pinned,
-      created_at: row.created_at
-    };
-
-    if (item.rawUrl.startsWith(EMAIL_PREFIX)) {
-      const content = item.rawUrl.replace(EMAIL_PREFIX, '');
-      const parts = content.split(EMAIL_SEPARATOR);
-      item.email = parts[0] || '';
-      item.password = parts[1] || '';
-      item.status = parts[3] || '0';
-      item.confirmReceived = parts[5] === '1';
-      // เลขพัสดุเก็บใน parts[6] คั่นด้วย PARCEL_SEPARATOR
-      const parcelRaw = parts[6] || '';
-      item.parcels = parcelRaw ? parcelRaw.split(PARCEL_SEPARATOR).filter(p => p.trim()) : [];
-      item.hasParcel = item.parcels.length > 0;
-      emails.push(item);
-    } else if (item.rawUrl.startsWith(QUICKNOTE_PREFIX)) {
-      // Quick Note
-      quickNoteId = item.id;
-      quickNoteText = item.rawUrl.replace(QUICKNOTE_PREFIX, '');
-      renderQuickNote(quickNoteText);
-    } else if (item.rawUrl.startsWith(ADDR_PREFIX)) {
-      const content = item.rawUrl.replace(ADDR_PREFIX, '');
-      const parts = content.split(EMAIL_SEPARATOR);
-      item.type = parts[0] || 'personal';
-      item.address = parts[1] || '';
-      item.name = item.title; // ใช้ title จากฐานข้อมูลเป็นชื่อเรียก
-      addresses.push(item);
-    } else {
-      if (item.rawUrl.includes('\n|||EXTRA|||\n')) {
-        const parts = item.rawUrl.split('\n|||EXTRA|||\n');
-        item.text = parts[0];
-        item.extra = parts[1];
-      } else {
-        item.text = item.rawUrl;
-        item.extra = '';
-      }
-      messages.push(item);
+  try {
+    const { data, error } = await sb.from('links').select('*').order('created_at', { ascending: true });
+    
+    if (error) {
+      console.error('Database error:', error);
+      showToast('❌ ไม่สามารถโหลดข้อมูลได้');
+      return;
     }
-  });
 
-  currentEmailsList = emails;
-  allMessagesList = messages;
-  // ไม่รีเซ็ต displayCount เมื่อ Realtime update เพื่อรักษาสถานะ Load More
-  if (emailDisplayCount < 10) emailDisplayCount = 10;
-  if (boardDisplayCount < 10) boardDisplayCount = 10;
-  renderMessages(messages);
-  renderEmails(emails);
-  // เรียงที่อยู่แบบต่อท้าย (Oldest First) ตามความต้องการของผู้ใช้
-  const sortedAddresses = [...addresses].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-  allAddresses = sortedAddresses; // เก็บข้อมูลที่อยู่ทั้งหมดเพื่อใช้ค้นหา
-  renderAddressList(sortedAddresses);
+    if (!data) {
+      console.error('No data returned from database');
+      showToast('❌ ไม่มีข้อมูลที่ได้รับ');
+      return;
+    }
+
+    const emails = [];
+    const messages = [];
+    const addresses = [];
+
+    data.forEach(row => {
+      const item = {
+        id: row.id,
+        title: row.title || '',
+        rawUrl: row.url || '',
+        isPinned: !!row.is_pinned,
+        created_at: row.created_at
+      };
+
+      if (item.rawUrl.startsWith(EMAIL_PREFIX)) {
+        const content = item.rawUrl.replace(EMAIL_PREFIX, '');
+        const parts = content.split(EMAIL_SEPARATOR);
+        item.email = parts[0] || '';
+        item.password = parts[1] || '';
+        item.status = parts[3] || '0';
+        item.confirmReceived = parts[5] === '1';
+        // เลขพัสดุเก็บใน parts[6] คั่นด้วย PARCEL_SEPARATOR
+        const parcelRaw = parts[6] || '';
+        item.parcels = parcelRaw ? parcelRaw.split(PARCEL_SEPARATOR).filter(p => p.trim()) : [];
+        item.hasParcel = item.parcels.length > 0;
+        emails.push(item);
+      } else if (item.rawUrl.startsWith(QUICKNOTE_PREFIX)) {
+        // Quick Note
+        quickNoteId = item.id;
+        quickNoteText = item.rawUrl.replace(QUICKNOTE_PREFIX, '');
+        renderQuickNote(quickNoteText);
+      } else if (item.rawUrl.startsWith(ADDR_PREFIX)) {
+        const content = item.rawUrl.replace(ADDR_PREFIX, '');
+        const parts = content.split(EMAIL_SEPARATOR);
+        item.type = parts[0] || 'personal';
+        item.address = parts[1] || '';
+        item.name = item.title; // ใช้ title จากฐานข้อมูลเป็นชื่อเรียก
+        addresses.push(item);
+      } else {
+        if (item.rawUrl.includes('\n|||EXTRA|||\n')) {
+          const parts = item.rawUrl.split('\n|||EXTRA|||\n');
+          item.text = parts[0];
+          item.extra = parts[1];
+        } else {
+          item.text = item.rawUrl;
+          item.extra = '';
+        }
+        messages.push(item);
+      }
+    });
+
+    currentEmailsList = emails;
+    allMessagesList = messages;
+    // ไม่รีเซ็ต displayCount เมื่อ Realtime update เพื่อรักษาสถานะ Load More
+    if (emailDisplayCount < 10) emailDisplayCount = 10;
+    if (boardDisplayCount < 10) boardDisplayCount = 10;
+    renderMessages(messages);
+    renderEmails(emails);
+    // เรียงที่อยู่แบบต่อท้าย (Oldest First) ตามความต้องการของผู้ใช้
+    const sortedAddresses = [...addresses].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    allAddresses = sortedAddresses; // เก็บข้อมูลที่อยู่ทั้งหมดเพื่อใช้ค้นหา
+    renderAddressList(sortedAddresses);
+  } catch (err) {
+    console.error('Exception loading data:', err);
+    showToast('❌ เกิดข้อผิดพลาดในการโหลด');
+  }
 }
 
 function isLikelyUrl(str) {
@@ -834,8 +851,12 @@ function renderEmails(emails) {
     return;
   }
 
-  // เรียงลำดับตามเวลาล่าสุด (Newest First)
-  const sortedFiltered = [...filtered].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  // เรียงลำดับตามค่า emailSortOrder
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    const dateA = new Date(a.created_at);
+    const dateB = new Date(b.created_at);
+    return emailSortOrder === 'newest' ? (dateB - dateA) : (dateA - dateB);
+  });
 
   // เก็บรายการที่กรองแล้วไว้ใช้กับ Load More
   const allFiltered = sortedFiltered;
@@ -1030,6 +1051,25 @@ document.getElementById('searchDateInput').oninput = () => {
 document.getElementById('searchMonthSelect').onchange = () => {
   emailDisplayCount = 10;
   renderEmails(currentEmailsList);
+};
+
+// Sort Buttons
+document.getElementById('sortOldestBtn').onclick = () => {
+  emailSortOrder = 'oldest';
+  emailDisplayCount = 10;
+  renderEmails(currentEmailsList);
+  // อัปเดตสไตล์ปุ่ม
+  document.getElementById('sortOldestBtn').className = 'btn-base btn-primary py-1 px-3 text-xs w-auto flex-1';
+  document.getElementById('sortNewestBtn').className = 'btn-base btn-secondary py-1 px-3 text-xs w-auto flex-1';
+};
+
+document.getElementById('sortNewestBtn').onclick = () => {
+  emailSortOrder = 'newest';
+  emailDisplayCount = 10;
+  renderEmails(currentEmailsList);
+  // อัปเดตสไตล์ปุ่ม
+  document.getElementById('sortNewestBtn').className = 'btn-base btn-primary py-1 px-3 text-xs w-auto flex-1';
+  document.getElementById('sortOldestBtn').className = 'btn-base btn-secondary py-1 px-3 text-xs w-auto flex-1';
 };
 
 // ตั้งค่าเดือนปัจจุบันเป็นค่าเริ่มต้น
@@ -1529,11 +1569,31 @@ if (emailFormTrigger && emailFormContent) {
 // =============================================
 // --- INIT ---
 // =============================================
+console.log('🚀 Initializing application...');
 initAddressSystem();
 (async () => {
+  console.log('📡 Loading data from Supabase...');
   await loadData();
+  console.log('✅ Data loaded successfully');
+  
   await ensureQuickNoteExists();
-  sb.channel('links-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, loadData).subscribe();
+  
+  // ตั้ง realtime subscription พร้อม error handling
+  const channel = sb.channel('links-channel')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, () => {
+      console.log('🔄 Realtime update detected');
+      loadData().catch(err => console.error('Error in realtime update:', err));
+    })
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Connected to real-time updates');
+      } else if (status === 'CLOSED') {
+        console.warn('⚠️ Real-time connection closed');
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Real-time channel error');
+        showToast('⚠️ การเชื่อมต่อแบบ realtime มีปัญหา');
+      }
+    });
 })();
 
 

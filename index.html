@@ -208,8 +208,19 @@
     </div>
   </div>
 
+  <!-- Sticky Tab Navigation -->
+  <nav class="tab-container-sticky">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="tab-container w-full">
+        <div class="tab-item active" data-tab="camouflage">🎭 พรางข้อความ</div>
+        <div class="tab-item" data-tab="board">💬 บอร์ด</div>
+        <div class="tab-item" data-tab="email">📧 อีเมล</div>
+      </div>
+    </div>
+  </nav>
+
   <div class="max-w-6xl mx-auto px-4 py-6 md:py-10">
-    <header class="flex flex-col md:flex-row justify-between items-center mb-8 md:12 gap-6">
+    <header class="flex flex-col items-start gap-4 mb-8">
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 md:w-14 md:h-14 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
           <span class="text-white text-2xl md:text-3xl">🛠️</span>
@@ -220,12 +231,6 @@
           <p id="ip-info" class="text-hint text-xs md:text-sm mt-1"></p>
         </div>
       </div>
-
-      <nav class="tab-container w-full md:w-auto">
-        <div class="tab-item active" data-tab="camouflage">🎭 พรางข้อความ</div>
-        <div class="tab-item" data-tab="board">💬 บอร์ด</div>
-        <div class="tab-item" data-tab="email">📧 อีเมล</div>
-      </nav>
     </header>
 
     <!-- Quick Note Section -->
@@ -465,6 +470,11 @@
                 <div class="flex items-center gap-2 bg-bg-input px-3 py-2 rounded-xl border border-border focus-within:border-accent transition-all">
                   <input type="checkbox" id="filterPendingCheckbox" class="w-4 h-4 accent-accent cursor-pointer">
                   <label for="filterPendingCheckbox" class="text-xs text-hint font-heading cursor-pointer whitespace-nowrap">📦 มีพัสดุ / ยังไม่ยืนยัน</label>
+                </div>
+                <div class="flex gap-2 items-center">
+                  <span class="text-xs text-hint font-heading">เรียงลำดับ:</span>
+                  <button id="sortOldestBtn" class="btn-base btn-secondary py-1 px-3 text-xs w-auto flex-1">🔼 เก่าไปใหม่</button>
+                  <button id="sortNewestBtn" class="btn-base btn-primary py-1 px-3 text-xs w-auto flex-1">🔽 ใหม่ไปเก่า</button>
                 </div>
               </div>
             </div>
