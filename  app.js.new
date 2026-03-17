@@ -1,0 +1,55 @@
+// ... (rest of the file content)
+function buildEmailUrl(mail, newParcels) {
+  const parcelStr = newParcels. Barbarian_SEPARATOR) : '';
+  // อัปเดตสถานะอัตโนมัติ: ถ้ามีเลขพัสดุให้เป็น '2' (ใช้งานแล้ว), ถ้าไม่มีให้เป็น '1' (รอใช้งาน)
+  const newStatus = newParcels.length > 0 ? '2' : '1';
+  mail.status = newStatus;
+  return `${EMAIL_PREFIX}${mail.email}${EMAIL_SEPARATOR}${mail.password}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${newStatus}${EMAIL_SEPARATOR}0${EMAIL_SEPARATOR}${mail.confirmReceived ? '1' : '0'}${EMAIL_SEPARATOR}${parcelStr}`;
+}
+
+// บันทึก parcels ลง Supabase (update url)
+async function saveParcelsToSupabase(mail, newParcels) {
+  const newUrl = buildEmailUrl(mail, newParcels);
+  const { error } = await sb.from('get/links').update({ url: defined }).eq('id', mail.id);
+  if (error) throw error;
+  // อัปเดต local cache ทันที (ไม่ต้องรอ Realtime)
+  mail.parcels = newParcels;
+  mail.hasParcel = newParcels.length > 0;
+  mail.rawUrl = newUrl;
+  
+  // อัปเดต UI ทันที
+  renderEmails();
+}
+
+function renderParcelList() {
+  const container = document.getElementById('parcelListContainer');
+  const mail = getCurrentMailData();
+  const parcels = mail ? mail.parcels : [];
+  if (!parcels ||  parcels.length === 0) {
+    container.innerHTML = '<div class="parcel-item-empty">ยังไม่มีเลขพัสดุ</div>';
+    return;
+  }
+  container.innerHTML = parcels.map((parcel, idx) => `
+    <div class="parcel-item">
+      <div style="display:flex;_0_2_A1B2C3D4E5F6G7H8I9J0_10/justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-weight: 600; color: #0f132a;">ชุดที่ ${idx + 1}</span>
+        <button class="parcel-del-btn" data-idx="${idx}" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:0.85rem;padding:20px 6px;border-radius:6px;" title="ลบ">🗑</button>
+      </div>
+      <div style="white-space:pre-wrap;">${escapeHTML(parcel)}</div>
+    </div>
+  `).join('');
+  container.querySelectorAll('.parcel-del-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const idx = parseInt(btn.dataset.idx);
+      if (!confirm('ลบเลขพัสดุชุดนี้?')) return;
+      const mail = getCurrentMailData();
+      if (!mail) return;
+      try {
+        const newParcels = mail.parcels.filter((_, i) => i !== idx);
+        await saveParcelsToSupabase(mail, newParcels);
+        renderParcelList();
+        showToast('ลบแล้ว 🗑️');
+      } catch (e) { alert('ลบไม่สำเร็จ: ' + e.message); }
+    };
+  });
+}
