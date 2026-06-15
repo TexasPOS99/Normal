@@ -60,8 +60,8 @@
 })();
 
 // --- SUPABASE & APP LOGIC ---
-const SUPABASE_URL = "https://uromhoezcxkhilxchxxe.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVyb21ob2V6Y3hraGlseGNoeHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMjEyOTUsImV4cCI6MjA2ODY5NzI5NX0.UDABYee8_JDlZHkKGzz6bQG0v95H86uLAP6WIN75Y7o";
+const SUPABASE_URL = "https://vqtcizcurwrnpivzjuxu.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxdGNpemN1cndybnBpdnpqdXh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyOTIwNTcsImV4cCI6MjA5Njg2ODA1N30.HGYcrPtpGFXohEwoL0wSaN7978WvxNbj-OMQVupFOwk";
 const EMAIL_PREFIX = "vault://";
 const ADDR_PREFIX = "addr://";
 const QUICKNOTE_PREFIX = "quicknote://";
